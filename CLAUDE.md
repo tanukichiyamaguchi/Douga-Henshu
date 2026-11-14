@@ -9,7 +9,7 @@
 |---|---|
 | `remotion/` | Remotion（React で動画）。`src/Root.tsx` に動画を登録する。サンプル: `SampleTitle`（日本語タイトル）、`SampleThree`（Three.js の 3D） |
 | `hyperframes/` | HyperFrames（HTML + GSAP で動画）。`index.html` が本体。専用の `CLAUDE.md` あり |
-| `tools/` | Python ツール（uv 管理）: `narrate.py`（Chatterbox ナレーション）、`transcribe.py`（faster-whisper 字幕）、`blender_render.py`（Blender 3D） |
+| `tools/` | Python ツール（uv 管理）: `narrate.py`（Chatterbox ナレーション）、`transcribe.py`（faster-whisper 字幕）、`tighten_pauses.py`（ナレーションの間を詰める）、`blender_render.py`（Blender 3D） |
 | `setup/cloud-setup.sh` | セッション開始前に依存関係・描画用ブラウザ・スキルを入れるスクリプト |
 | `.mcp.json` | Chrome DevTools MCP（書き出し前の画面確認用） |
 | `out/` など | 書き出し物。Git には入れない（`.gitignore` 済み） |
@@ -66,6 +66,19 @@
 - 生成物・作品フォルダ（`work/`・`out/`）は **コミットしない**（公開リポジトリのため）。
 - 実在の人物・他社のロゴやキャラクターに似せた生成をしない。他人の声を真似ない。
 
+### 広告動画（Meta のリール広告など）の場合（2026-11-14 の制作で確認）
+
+- **文字は y 300〜1240px・x 110〜970px の中だけ**（1080×1920）。上 14%・下 35%・左右 6% は UI に隠れる
+  （複数の第三者ガイドの値。Meta 公式ページでは数値を確認できていない）。下 35% には文字を置かない。
+- Meta 公式の推奨: 9:16・音あり・字幕あり、最初の 3 秒で要点かブランドを見せる、要点は安全域の中。
+  化粧品・美容施術の広告は 18 歳以上に配信（Meta の Health and Wellness ポリシー）。
+  「あなたは〜？」と個人の特性（健康・身体など）を決めつける問いかけはしない。
+- **表示のルール（景品表示法など）**: 「約2倍」のような比較は、比較対象と個人差の注記を同じ画面に、読める
+  時間（`check` の `line_unread` を通る長さ）出す。価格は「初回限定」「税込」などの条件を価格と同じ札に入れる。
+  「No.1」は根拠（範囲・調査）を示せる時だけ。生成映像には「映像はイメージです」。化粧品は「認定」でなく「登録（届出）」。
+- **UGC 風でも、架空のお客様の体験談は作らない**（AI の人物に実体験を語らせない）。語り手は店や商品側の声にする。
+- 実在のスタッフの写真は、本人の了承をユーザーに確認し、加工・AI 生成をせずそのまま使う。
+
 ## この環境の前提（必ず守る）
 
 - **GPU なし・CPU 4 コア・メモリ 15GB**。3D やAI処理は CPU で動く分だけ遅い。
@@ -97,6 +110,7 @@ npm run render -- -o renders/out.mp4          # 動画を書き出す
 # Python ツール（tools/ で実行）
 uv run python narrate.py --text "読み上げる文章" --out ../out/narration.wav
 uv run python transcribe.py ../out/narration.wav --out-dir ../out
+uv run python tighten_pauses.py ../out/narration.mp3 --tempo 1.04 --out ../out/narration-tight.wav   # 文の間を 0.22 秒に詰め、4% 速く
 uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 ```
 
@@ -124,6 +138,25 @@ uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 - AI モデル（Chatterbox 約 3GB、Whisper 0.5〜1.6GB）は**初回使用時に**取得される
   （セッションごとに 1 回）。
 
+### 2026-11-14 の広告制作（KATE stage LASH・20 秒リール）で分かったこと
+
+- **ElevenLabs の `eleven_v4` は話す速さ（`--speed`）が効かない**（0.8 と 1.2 で長さが同じ。
+  `eleven_multilingual_v2` では効く）。v4 の声の尺を合わせる時は `tighten_pauses.py` で文の間（無音と
+  息継ぎ、各 0.6 秒前後）を詰め、必要なら `--tempo 1.04`（rubberband、音の高さは保つ）。20.6 → 17.3 秒。
+- **Seedance の映像はキーフレームが先頭の 1 枚だけ**。途中から使うと頭出しが重くなるので、
+  `ffmpeg -vf "scale=1080:1920:flags=lanczos" -g 6 -bf 0 -crf 15` で作り直してから HyperFrames に入れる。
+- **HyperFrames の `data-motion-blur` は場面（サブコンポジション）の中の動きには効かない**
+  （`check` が `motion_blur_no_movers`）。押し出し・ホイップの転換は、前後の場面の枠を 0.3〜0.4 秒重ね、
+  同じ曲線で隙間なく並べて動かす。上に重なる場面の `#root` には背景色を付けない（下の場面を隠すため）。
+- **音量**: モノラルの声を −16 LUFS にそろえても、書き出し（ステレオ）では −13 LUFS になる（左右に同じ音が
+  入るため +3 dB）。声 `data-volume="0.84"` で全体 −14.7 LUFS・ピーク −2.2 dBTP だった。
+- **効果音の山が子音に重なると聞き取りにくくなる**（シャッター音で「蒲田」が「浜田」と書き起こされた）。
+  混ぜた後の MP4 を `transcribe.py` で必ず確認し、効果音の余韻は言葉の出だしより前に終える。
+- **文字起こしの癖**: 「まつパ」が「松葉」と出ることがある（同じ音でも実行ごとに揺れる）。音の側を確かめる時は、
+  「パ」直前の閉鎖区間に声の低い成分（80〜400Hz）が無いこと（無声破裂音）を見る。
+- **BGM の終わりを動画の終わりに合わせる**: ElevenLabs Music は指定の長さより手前で曲を終えることがある
+  （20 秒指定で 18.3 秒から無音）。小節の頭で 1 小節を複製して挿入すると、テンポを変えずに延ばせる。
+
 ## 生成 AI（有料 API）
 
 リアルな映像・画像・音楽は外部の有料 API で作る（`tools/` で実行）。
@@ -134,6 +167,7 @@ uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 | 画像（標準） | `gen_image_openai.py` | OpenAI の GPT Image（既定 `gpt-image-2.5-flare`） | `api.openai.com` |
 | 画像（予備） | `gen_image.py` | BytePlus ModelArk の Seedream | `ark.ap-southeast.bytepluses.com` |
 | 音楽（BGM） | `gen_music.py` | ElevenLabs Music | `api.elevenlabs.io` |
+| 効果音 | `gen_sfx.py` | ElevenLabs の効果音生成 | `api.elevenlabs.io` |
 | ナレーション | `narrate_elevenlabs.py` | ElevenLabs の音声合成（標準: 声 Harune・モデル `eleven_v4`） | `api.elevenlabs.io` |
 
 ```bash
@@ -142,6 +176,7 @@ uv run python gen_video.py --task-id <タスクID> --out ../out/shot.mp4   # 生
 uv run python gen_image_openai.py --prompt "..." --size 1536x1024 --out ../out/image.png
 uv run python gen_image.py --prompt "..." --out ../out/image.png   # Seedream（予備）
 uv run python gen_music.py --prompt "明るいアコースティック、120BPM" --seconds 30 --out ../out/bgm.mp3
+uv run python gen_sfx.py --prompt "short airy whoosh for a fast camera whip pan" --seconds 0.6 --takes 2 --out ../out/whoosh.mp3
 ```
 
 - **API キーはスクリプトにもリポジトリにも書かない。** クラウド環境のネットワークシークレットとして
@@ -160,6 +195,9 @@ uv run python gen_music.py --prompt "明るいアコースティック、120BPM"
     声は共有ボイスの Harune（`c2XJrw7TvNGtOc6r0ijG`）をユーザーが試聴して選んだ。約 50 文字で約 8 秒、
     文字起こしで台本どおりと確認。BGM は 10 秒が約 5 秒で生成（MP3・ステレオ・44.1kHz）。
     日本語の共有ボイスの探し方: `GET https://api.elevenlabs.io/v1/shared-voices?language=ja`。
+    効果音（`gen_sfx.py`）も生成を確認済み（0.5〜0.6 秒・MP3。音量は −14〜−17 LUFS と大きく、ピークが 0 dB を
+    超えるものもあるので、動画では `data-volume` 0.3〜0.4 程度に下げる）。
+    このキーには `user_read` 権限が無く、`GET /v1/user/subscription`（プランの確認）は 401 になる。
   - 他に使えるモデル（例）: 映像 `dreamina-seedance-2-0-fast-260128`、画像 `dola-seedream-5-0-pro-260628`。
     一覧は `curl -H "Authorization: Bearer proxy-injected" https://ark.ap-southeast.bytepluses.com/api/v3/models`。
 - Seedance の参考画像（`--image`）は公開 URL か BytePlus の素材 ID のみ。役割（role）は公式ドキュメントで
