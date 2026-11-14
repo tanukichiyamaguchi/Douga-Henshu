@@ -3,6 +3,7 @@
 使い方（tools/ で実行）:
   uv run python fetch_fonts.py ../work/<作品フォルダ> \
       --font "Shippori Mincho B1:500,600,700,800" --font "Zen Kaku Gothic New:700,900"
+  uv run python fetch_fonts.py ../work/<作品フォルダ> --font "Cormorant Garamond:600,600i"   # i を付けると斜体
 
 - 作品の index.html と compositions/*.html の本文の文字（＋英数字・よく使う記号）を集め、
   Google Fonts の CSS API の text= で、その文字だけを含むファイル（woff2）を取得して
@@ -59,7 +60,7 @@ def main() -> None:
         "--font",
         action="append",
         required=True,
-        help='"書体名:太さ,太さ" の形（例: "Zen Kaku Gothic New:700,900"）。複数指定できる',
+        help='"書体名:太さ,太さ" の形（例: "Zen Kaku Gothic New:700,900"）。太さに i を付けると斜体（600i）。複数指定できる',
     )
     args = parser.parse_args()
 
@@ -72,23 +73,27 @@ def main() -> None:
     for spec in args.font:
         family, _, weights = spec.partition(":")
         family = family.strip()
-        for weight in [w.strip() for w in (weights or "400").split(",") if w.strip()]:
+        for spec_weight in [w.strip() for w in (weights or "400").split(",") if w.strip()]:
+            italic = spec_weight.endswith("i")
+            weight = spec_weight[:-1] if italic else spec_weight
+            axis = f"ital,wght@1,{weight}" if italic else f"wght@{weight}"
             url = (
                 "https://fonts.googleapis.com/css2?family="
                 + urllib.parse.quote_plus(family)
-                + f":wght@{weight}&text="
+                + f":{axis}&text="
                 + urllib.parse.quote(text)
             )
             css = curl([url])
             sources = re.findall(r"src: url\((https://[^)]+)\) format\('woff2'\)", css)
             if len(sources) != 1:
-                sys.exit(f"{family} {weight}: 想定外の応答です（書体名・太さを確認してください）\n{css[:300]}")
-            name = f"{family.replace(' ', '')}-{weight}.woff2"
+                sys.exit(f"{family} {spec_weight}: 想定外の応答です（書体名・太さを確認してください）\n{css[:300]}")
+            name = f"{family.replace(' ', '')}-{spec_weight}.woff2"
             curl(["-o", str(out_dir / name), sources[0]])
             size = (out_dir / name).stat().st_size
-            print(f"{family} {weight}: assets/fonts/{name}（{size:,} バイト）")
+            print(f"{family} {spec_weight}: assets/fonts/{name}（{size:,} バイト）")
+            style = " font-style: italic;" if italic else ""
             faces.append(
-                f'@font-face {{ font-family: "{family}"; font-weight: {weight}; '
+                f'@font-face {{ font-family: "{family}"; font-weight: {weight};{style} '
                 f'src: url("assets/fonts/{name}") format("woff2"); }}'
             )
 
