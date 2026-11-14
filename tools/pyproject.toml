@@ -17,6 +17,7 @@ dependencies = [
   "av<19",
   "byteplussdk-arkruntime==3.0.66",
   "elevenlabs==2.78.0",
+  "openai==3.51.0",
 ]
 
 [tool.uv]

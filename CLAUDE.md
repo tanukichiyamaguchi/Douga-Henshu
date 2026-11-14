@@ -78,13 +78,16 @@ uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 
 | 用途 | スクリプト | サービス | 通信先 |
 |---|---|---|---|
-| 映像 | `gen_video.py` | BytePlus ModelArk の Seedance | `ark.ap-southeast.bytepluses.com` |
-| 画像 | `gen_image.py` | BytePlus ModelArk の Seedream | 同上 |
+| 映像 | `gen_video.py` | BytePlus ModelArk の Seedance | `ark.ap-southeast.bytepluses.com`（生成した映像の取得は `ark-acg-ap-southeast-1.tos-ap-southeast-1.volces.com`） |
+| 画像（標準） | `gen_image_openai.py` | OpenAI の GPT Image（既定 `gpt-image-2.5-flare`） | `api.openai.com` |
+| 画像（予備） | `gen_image.py` | BytePlus ModelArk の Seedream | `ark.ap-southeast.bytepluses.com` |
 | 音楽（BGM） | `gen_music.py` | ElevenLabs Music | `api.elevenlabs.io` |
 
 ```bash
-uv run python gen_video.py --model <SeedanceのモデルID> --prompt "..." --ratio 9:16 --duration 5 --out ../out/shot.mp4
-uv run python gen_image.py --model <SeedreamのモデルID> --prompt "..." --out ../out/image.png
+uv run python gen_video.py --prompt "..." --ratio 9:16 --resolution 720p --duration 5 --no-audio --out ../out/shot.mp4
+uv run python gen_video.py --task-id <タスクID> --out ../out/shot.mp4   # 生成済みの結果だけ取り直す（無料）
+uv run python gen_image_openai.py --prompt "..." --size 1536x1024 --out ../out/image.png
+uv run python gen_image.py --prompt "..." --out ../out/image.png   # Seedream（予備）
 uv run python gen_music.py --prompt "明るいアコースティック、120BPM" --seconds 30 --out ../out/bgm.mp3
 ```
 
@@ -92,10 +95,10 @@ uv run python gen_music.py --prompt "明るいアコースティック、120BPM"
   保存し、プロキシが通信時に自動で付ける（スクリプトはダミー値を送る）。
 - **状況（2026-11-14 時点）:** 公式 SDK（`byteplussdk-arkruntime` 3.0.66 / `elevenlabs` 2.78.0）で
   作成し、模擬サーバーで送信内容を確認済み。
-  - BytePlus: キー登録済み・認証 OK（無料の一覧取得で確認）。既定モデルは API のモデル一覧で確認した
-    `dreamina-seedance-2-5-260628`（映像）と `dola-seedream-5-5-261028`（画像）。
-    **実際の生成は未確認**（管理画面でのモデル有効化と残高の入金が必要）。
-    生成映像のダウンロード元ホストは初回生成で確定させ、許可リストに追加する。
+  - BytePlus: キー登録済み。**Seedance 2.5 と Seedream 5.5 で実際の生成を確認済み**
+    （映像 720p・5 秒は約 135 秒、画像は約 17 秒）。既定モデルは `dreamina-seedance-2-5-260628`（映像）と
+    `dola-seedream-5-5-261028`（画像）。映像の取得に失敗しても、`--task-id` で料金をかけずに取り直せる。
+  - OpenAI: キー未登録。`gen_image_openai.py` は模擬サーバーで確認済み（本番は未確認）。
   - ElevenLabs: キー未登録。
   - 他に使えるモデル（例）: 映像 `dreamina-seedance-2-0-fast-260128`、画像 `dola-seedream-5-0-pro-260628`。
     一覧は `curl -H "Authorization: Bearer proxy-injected" https://ark.ap-southeast.bytepluses.com/api/v3/models`。
@@ -117,7 +120,10 @@ claude.ai の Google Drive コネクタ（`mcp__Google_Drive__*`）を使う。A
 - **保存（出力）**: `create_file` の `base64Content` にファイル参照
   `sha256:<sha256>:<絶対パス>` を渡し、`contentMimeType: video/mp4`・
   `disableConversionToGoogleType: true`・`parentId` に `02_完成動画` の ID を指定する。
-  保存のたびにユーザーの承認が必要。131KB の MP4 で動作確認済み。大きなファイルの上限は未確認。
+  保存のたびにユーザーの承認が必要。131KB の MP4 で動作確認済み。
+  **コネクタは 1 回 4.2MB まで（ファイル本体は約 3.1MB まで）**。5.3MB の画像は「上限超過」で送れなかった
+  （2026-11-14 実測）。それより大きい完成品は、コネクタでは保存できない。分割・圧縮などで勝手に
+  回避せず、ユーザーに保存方法を確認する（このアプリへの直接送付は可能）。
 - **取り込み（入力）**: `download_file_content` は中身を base64 で会話に流すため、画像・台本など
   小さいファイル向け。数十 MB 以上の動画素材は現実的でない（上限は未確認）。
 - 保存後は `viewUrl`（Drive で開くリンク）をユーザーに伝える。

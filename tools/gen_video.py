@@ -37,7 +37,8 @@ DEFAULT_MODEL = "dreamina-seedance-2-5-260628"
 def main() -> None:
     parser = argparse.ArgumentParser(description="Seedance で映像を生成する")
     parser.add_argument("--model", default=os.environ.get("SEEDANCE_MODEL", DEFAULT_MODEL), help=f"Seedance のモデル ID（既定: {DEFAULT_MODEL}）")
-    parser.add_argument("--prompt", required=True, help="作りたい映像の説明")
+    parser.add_argument("--prompt", help="作りたい映像の説明（--task-id を使う時は不要）")
+    parser.add_argument("--task-id", help="生成済み（または生成中）の依頼のタスク ID。新しく生成せず、結果の取得だけ行う")
     parser.add_argument("--out", type=Path, required=True, help="保存先の MP4")
     parser.add_argument("--ratio", help="縦横比（例: 16:9, 9:16, 1:1）")
     parser.add_argument("--duration", type=int, help="秒数")
@@ -52,8 +53,10 @@ def main() -> None:
 
     if not args.model:
         sys.exit("モデル ID を --model か環境変数 SEEDANCE_MODEL で指定してください。")
+    if not args.prompt and not args.task_id:
+        sys.exit("--prompt（新しく生成）か --task-id（生成済みの結果を取得）を指定してください。")
 
-    content: list[dict] = [{"type": "text", "text": args.prompt}]
+    content: list[dict] = [{"type": "text", "text": args.prompt or ""}]
     for url in args.image:
         content.append({"type": "image_url", "image_url": {"url": url}, "role": args.image_role})
 
@@ -70,12 +73,16 @@ def main() -> None:
     }
 
     client = Ark(api_key=os.environ.get("ARK_API_KEY", DUMMY_KEY), base_url=BASE_URL)
-    created = client.content_generation.tasks.create(model=args.model, content=content, **options)
-    print(f"生成を依頼しました: タスク {created.id}")
+    if args.task_id:
+        task_id = args.task_id
+        print(f"生成済みのタスク {task_id} の結果を取得します（新しい生成はしないので料金はかからない）")
+    else:
+        task_id = client.content_generation.tasks.create(model=args.model, content=content, **options).id
+        print(f"生成を依頼しました: タスク {task_id}（ダウンロードに失敗しても --task-id {task_id} で取り直せる）")
 
     started = time.monotonic()
     while True:
-        task = client.content_generation.tasks.get(task_id=created.id)
+        task = client.content_generation.tasks.get(task_id=task_id)
         if task.status == "succeeded":
             break
         if task.status in ("failed", "cancelled"):
@@ -83,7 +90,7 @@ def main() -> None:
             detail = f"{error.code}: {error.message}" if error else "詳細なし"
             sys.exit(f"生成に失敗しました（{task.status}）: {detail}")
         if time.monotonic() - started > args.timeout:
-            sys.exit(f"{args.timeout:.0f} 秒待っても終わりませんでした。タスク {created.id} を後で確認してください。")
+            sys.exit(f"{args.timeout:.0f} 秒待っても終わりませんでした。後で --task-id {task_id} で取得してください。")
         print(f"  状態: {task.status}（{time.monotonic() - started:.0f} 秒経過）")
         time.sleep(args.poll)
 
