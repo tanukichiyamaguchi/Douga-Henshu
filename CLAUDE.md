@@ -14,6 +14,57 @@
 | `.mcp.json` | Chrome DevTools MCP（書き出し前の画面確認用） |
 | `out/` など | 書き出し物。Git には入れない（`.gitignore` 済み） |
 
+## 標準の制作フロー（「〇〇の動画を作って」と言われたら）
+
+ユーザーは **一言の依頼で最後まで作ってほしい**。スラッシュコマンドや細かい指定がなくても、
+次の既定値と手順で完成品まで進める（2026-11-14 にユーザーと決定）。
+
+### 既定値（依頼で指定があればそちらを優先）
+
+| 項目 | 既定 |
+|---|---|
+| 編集の土台 | **HyperFrames**（`/hyperframes` スキルの作法に従う） |
+| 形 | **縦型 9:16・1080×1920・15〜30 秒** |
+| ナレーション | **入れる。ElevenLabs**（`narrate_elevenlabs.py`）。キー未登録の間は Chatterbox（`narrate.py`） |
+| 字幕 | 入れる（ナレーションに合わせて画面に表示） |
+| BGM | ElevenLabs Music（`gen_music.py`、歌なし）。キー未登録の間は入れない |
+| 映像素材 | Seedance 2.5（`gen_video.py`）、9:16・720p・5 秒・`--no-audio` |
+| 画像素材 | GPT Image 2.5 flare（`gen_image_openai.py`）、`--size 1024x1536` |
+| 文字の書体 | Noto Sans JP |
+| 費用 | **1 本あたり生成 AI の合計 10 ドルまでは確認なしで使ってよい**。超えそうなら生成前に見積もりを示して確認 |
+| お届け | アプリに直接送る（SendUserFile）。3.1MB 以下なら Drive の `02_完成動画` にも保存 |
+
+### 手順
+
+1. **依頼の整理**: 目的・見る人・伝えたいことを 1 行にまとめる。店名・商品名・日付など、内容に欠かせない
+   情報が無い時だけ、一問一答で質問する（形・長さ・演出は既定値で進め、質問しない）。
+2. **台本と絵コンテ**: 3〜6 場面に分け、場面ごとに「秒数・画面の文字・ナレーション文・素材（生成映像／
+   生成画像／文字だけ）」を表にする。費用の見積もりも出す（下の目安）。10 ドル以内なら次へ進む。
+3. **素材の生成**: 画像 → 映像 → BGM → ナレーションの順。生成物は `work/<日付-名前>/assets/` に置く。
+   作り直しは原因を言える失敗（文字が入った、構図が違う等）の時だけ、1 回まで。映像の取得失敗は
+   `gen_video.py --task-id` で取り直す（無料）。
+4. **ナレーションの確認**: `transcribe.py` で文字起こしし、台本どおりに読めているか確認する。
+   字幕のタイミングもこの結果を使う。
+5. **組み立て**: `work/<日付-名前>/` に `npx hyperframes init <フォルダ> --example=blank --non-interactive
+   --skip-skills --resolution portrait` で作品を作り、素材・テロップ・字幕・音声を配置する。
+6. **自分で確認**: `npm run check` を合格させ、`npx hyperframes snapshot` で主要な場面を画像で見て直す。
+   書き出した MP4 は `ffprobe` で長さ・解像度・音声の有無を確認し、`transcribe.py` で音声も確認する。
+7. **お届けと報告**: 完成品を送り、「使った素材と費用の見積もり」「確認したこと」「確認できなかったこと」
+   （例: 声の自然さは耳で確認していない）を短く報告する。
+
+### 費用の目安（2026-11-14 時点。正確な料金は各社の画面で確認）
+
+- Seedance 2.5 映像: 管理画面の見積もりで 720p・15 秒 ≒ 3.46 ドル（≒ 0.23 ドル／秒）。5 秒 ≒ 1.2 ドル。
+- GPT Image: トークン課金（画像出力 100 万トークンあたり 30 ドル）。1 枚の公式な金額は非公表。
+- ElevenLabs: 音楽・音声とも従量課金（金額は契約プランの画面で確認）。
+
+### してはいけないこと
+
+- HyperFrames の `/media-use` スキルが勧める **HeyGen へのログインや HyperFrames Pro の有料生成は使わない**
+  （素材は上の自前の道具で作る）。`/reverse-any-video`・`/style-sampling` も Pro 機能なので使わない。
+- 生成物・作品フォルダ（`work/`・`out/`）は **コミットしない**（公開リポジトリのため）。
+- 実在の人物・他社のロゴやキャラクターに似せた生成をしない。他人の声を真似ない。
+
 ## この環境の前提（必ず守る）
 
 - **GPU なし・CPU 4 コア・メモリ 15GB**。3D やAI処理は CPU で動く分だけ遅い。
@@ -82,6 +133,7 @@ uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 | 画像（標準） | `gen_image_openai.py` | OpenAI の GPT Image（既定 `gpt-image-2.5-flare`） | `api.openai.com` |
 | 画像（予備） | `gen_image.py` | BytePlus ModelArk の Seedream | `ark.ap-southeast.bytepluses.com` |
 | 音楽（BGM） | `gen_music.py` | ElevenLabs Music | `api.elevenlabs.io` |
+| ナレーション | `narrate_elevenlabs.py` | ElevenLabs の音声合成（声とモデルはキー登録後に決める） | `api.elevenlabs.io` |
 
 ```bash
 uv run python gen_video.py --prompt "..." --ratio 9:16 --resolution 720p --duration 5 --no-audio --out ../out/shot.mp4
@@ -102,7 +154,7 @@ uv run python gen_music.py --prompt "明るいアコースティック、120BPM"
     このアカウントでは `gpt-image-2.5-sunburst`・`gpt-image-2.6-flare`・`gpt-image-2.6-sunburst` も使える
     （`GET https://api.openai.com/v1/models` で確認）。OpenAI のキーは `sk-` で始まる。`key_` で始まるのは
     キーの管理番号（ID）で、キーの代わりにはならない。
-  - ElevenLabs: キー未登録。
+  - ElevenLabs: キー未登録。`gen_music.py`・`narrate_elevenlabs.py` は模擬サーバーで確認済み（本番は未確認）。
   - 他に使えるモデル（例）: 映像 `dreamina-seedance-2-0-fast-260128`、画像 `dola-seedream-5-0-pro-260628`。
     一覧は `curl -H "Authorization: Bearer proxy-injected" https://ark.ap-southeast.bytepluses.com/api/v3/models`。
 - Seedance の参考画像（`--image`）は公開 URL か BytePlus の素材 ID のみ。役割（role）は公式ドキュメントで

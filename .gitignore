@@ -5,6 +5,7 @@ __pycache__/
 
 # 書き出した動画・画像・作業ファイル
 out/
+work/
 remotion/out/
 hyperframes/renders/
 hyperframes/.hyperframes/
