@@ -1,0 +1,18 @@
+# 依存関係（セッション開始時に setup/cloud-setup.sh が入れ直す）
+node_modules/
+tools/.venv/
+__pycache__/
+
+# 書き出した動画・画像・作業ファイル
+out/
+work/
+remotion/out/
+hyperframes/renders/
+hyperframes/.hyperframes/
+
+# 秘密情報
+.env
+.env.*
+
+# OS
+.DS_Store

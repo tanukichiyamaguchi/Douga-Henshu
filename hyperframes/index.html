@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      /* 動作確認用のサンプル。色と書体は作品ごとに差し替える。 */
+      :root {
+        --ground: #0e1116;
+        --ink: #ffffff;
+        --muted: #c9d1d9;
+        --accent: #3dd6ff;
+        --font-display: "Noto Sans JP", sans-serif;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ground);
+      }
+      #root {
+        width: 100%;
+        height: 100%;
+        font-family: var(--font-display);
+      }
+      #scene {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #title {
+        color: var(--ink);
+        font-size: 110px;
+        font-weight: 700;
+      }
+      #bar {
+        width: 320px;
+        height: 8px;
+        margin: 32px 0;
+        border-radius: 4px;
+        background: var(--accent);
+        transform-origin: left center;
+      }
+      #subtitle {
+        color: var(--muted);
+        font-size: 44px;
+        font-weight: 400;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="4"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div id="scene" class="clip" data-start="0" data-duration="4" data-track-index="0">
+        <h1 id="title">動画編集スタジオ</h1>
+        <div id="bar"></div>
+        <p id="subtitle">HyperFrames と GSAP で日本語を動かすサンプル</p>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      // タイトルは 0 秒目から見せる（最初のフレームがサムネイルになるため）。
+      tl.fromTo("#title", { y: 40 }, { y: 0, duration: 0.8, ease: "power3.out" }, 0);
+      tl.fromTo("#bar", { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: "power2.inOut" }, 0.2);
+      tl.fromTo("#subtitle", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "none" }, 0.6);
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
