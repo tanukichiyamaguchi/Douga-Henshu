@@ -9,10 +9,10 @@
 |---|---|
 | `remotion/` | Remotion（React で動画）。`src/Root.tsx` に動画を登録する。サンプル: `SampleTitle`（日本語タイトル）、`SampleThree`（Three.js の 3D） |
 | `hyperframes/` | HyperFrames（HTML + GSAP で動画）。`index.html` が本体。専用の `CLAUDE.md` あり |
-| `tools/` | Python ツール（uv 管理）: `narrate.py`（Chatterbox ナレーション）、`transcribe.py`（faster-whisper 字幕）、`blender_render.py`（Blender 3D） |
+| `tools/` | Python ツール（uv 管理）: 生成 AI の `gen_video.py`（Seedance 映像）・`gen_image_openai.py`（GPT Image）・`gen_image.py`（Seedream）・`gen_music.py`（ElevenLabs BGM）・`narrate_elevenlabs.py`（ElevenLabs ナレーション）、`narrate.py`（Chatterbox ナレーション）、`transcribe.py`（faster-whisper 字幕）、`blender_render.py`（Blender 3D）、`drive.py`（Google Drive API、未設定） |
 | `setup/cloud-setup.sh` | セッション開始前に依存関係・描画用ブラウザ・スキルを入れるスクリプト |
 | `.mcp.json` | Chrome DevTools MCP（書き出し前の画面確認用） |
-| `out/` など | 書き出し物。Git には入れない（`.gitignore` 済み） |
+| `work/`・`out/` など | 作品ごとの作業フォルダと書き出し物。Git には入れない（`.gitignore` 済み） |
 
 ## 標準の制作フロー（「〇〇の動画を作って」と言われたら）
 
