@@ -91,8 +91,14 @@ uv run python gen_music.py --prompt "明るいアコースティック、120BPM"
 - **API キーはスクリプトにもリポジトリにも書かない。** クラウド環境のネットワークシークレットとして
   保存し、プロキシが通信時に自動で付ける（スクリプトはダミー値を送る）。
 - **状況（2026-11-14 時点）:** 公式 SDK（`byteplussdk-arkruntime` 3.0.66 / `elevenlabs` 2.78.0）で
-  作成し、模擬サーバーで送信内容を確認済み。**本物のキーでの生成は未確認**（キー未登録）。
-  モデル ID と、生成映像のダウンロード元ホスト（許可リストへの追加が必要）は初回実行で確定させる。
+  作成し、模擬サーバーで送信内容を確認済み。
+  - BytePlus: キー登録済み・認証 OK（無料の一覧取得で確認）。既定モデルは API のモデル一覧で確認した
+    `dreamina-seedance-2-5-260628`（映像）と `dola-seedream-5-5-261028`（画像）。
+    **実際の生成は未確認**（管理画面でのモデル有効化と残高の入金が必要）。
+    生成映像のダウンロード元ホストは初回生成で確定させ、許可リストに追加する。
+  - ElevenLabs: キー未登録。
+  - 他に使えるモデル（例）: 映像 `dreamina-seedance-2-0-fast-260128`、画像 `dola-seedream-5-0-pro-260628`。
+    一覧は `curl -H "Authorization: Bearer proxy-injected" https://ark.ap-southeast.bytepluses.com/api/v3/models`。
 - Seedance の参考画像（`--image`）は公開 URL か BytePlus の素材 ID のみ。役割（role）は公式ドキュメントで
   確認できた `reference_image` だけを使う。
 - どれも従量課金。試作は短い秒数・低い解像度から始め、作り直しは原因を特定してから行う。

@@ -1,7 +1,7 @@
 """BytePlus ModelArk の Seedance で、文章（と参考画像）から映像を生成して MP4 を保存する。
 
 使い方（tools/ ディレクトリで実行）:
-  uv run python gen_video.py --model <SeedanceのモデルID> \
+  uv run python gen_video.py --model <SeedanceのモデルID（省略可）> \
       --prompt "夕暮れの海辺を歩く人、ゆっくり横移動するカメラ" --out ../out/shot1.mp4
   uv run python gen_video.py --model <ID> --prompt "..." --ratio 9:16 --duration 5 --out ../out/v.mp4
   uv run python gen_video.py --model <ID> --prompt "画像1の商品を回転させる" \
@@ -30,11 +30,13 @@ from byteplussdkarkruntime import Ark
 # 本物のキーはプロキシが付けるため、SDK には形式上の値だけを渡す。
 DUMMY_KEY = "injected-by-proxy"
 BASE_URL = os.environ.get("ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3")
+# 2026-11-14 に API のモデル一覧（GET /models）で確認した最新版。
+DEFAULT_MODEL = "dreamina-seedance-2-5-260628"
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Seedance で映像を生成する")
-    parser.add_argument("--model", default=os.environ.get("SEEDANCE_MODEL"), help="Seedance のモデル ID（環境変数 SEEDANCE_MODEL でも可）")
+    parser.add_argument("--model", default=os.environ.get("SEEDANCE_MODEL", DEFAULT_MODEL), help=f"Seedance のモデル ID（既定: {DEFAULT_MODEL}）")
     parser.add_argument("--prompt", required=True, help="作りたい映像の説明")
     parser.add_argument("--out", type=Path, required=True, help="保存先の MP4")
     parser.add_argument("--ratio", help="縦横比（例: 16:9, 9:16, 1:1）")

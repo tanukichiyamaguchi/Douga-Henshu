@@ -1,7 +1,7 @@
 """BytePlus ModelArk の Seedream で、文章（と参考画像）から画像を生成して保存する。
 
 使い方（tools/ ディレクトリで実行）:
-  uv run python gen_image.py --model <SeedreamのモデルID> \
+  uv run python gen_image.py --model <SeedreamのモデルID（省略可）> \
       --prompt "朝日に照らされた木造のカフェの外観、写真風" --out ../out/cafe.png
   uv run python gen_image.py --model <ID> --prompt "..." --size 2K --out ../out/a.png
 
@@ -25,11 +25,13 @@ from byteplussdkarkruntime import Ark
 
 DUMMY_KEY = "injected-by-proxy"
 BASE_URL = os.environ.get("ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3")
+# 2026-11-14 に API のモデル一覧（GET /models）で確認した最新版。
+DEFAULT_MODEL = "dola-seedream-5-5-261028"
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Seedream で画像を生成する")
-    parser.add_argument("--model", default=os.environ.get("SEEDREAM_MODEL"), help="Seedream のモデル ID（環境変数 SEEDREAM_MODEL でも可）")
+    parser.add_argument("--model", default=os.environ.get("SEEDREAM_MODEL", DEFAULT_MODEL), help=f"Seedream のモデル ID（既定: {DEFAULT_MODEL}）")
     parser.add_argument("--prompt", required=True, help="作りたい画像の説明")
     parser.add_argument("--out", type=Path, required=True, help="保存先（.png / .jpg）")
     parser.add_argument("--size", help="大きさ（例: 2K、または 1920x1080）")
