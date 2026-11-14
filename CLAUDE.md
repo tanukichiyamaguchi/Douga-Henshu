@@ -131,6 +131,22 @@ claude.ai の Google Drive コネクタ（`mcp__Google_Drive__*`）を使う。A
   小さいファイル向け。数十 MB 以上の動画素材は現実的でない（上限は未確認）。
 - 保存後は `viewUrl`（Drive で開くリンク）をユーザーに伝える。
 
+### 大きなファイル（3.1MB 超）は Drive API で（`tools/drive.py`）
+
+```bash
+uv run python drive.py whoami                         # つながるアカウントとフォルダを確認
+uv run python drive.py upload ../out/final.mp4        # 02_完成動画 に保存（大きくても可）
+uv run python drive.py list                           # 01_素材 の一覧
+uv run python drive.py download 台本.txt --out ../out/input/   # 01_素材 から取り込む
+```
+
+- 認証情報は環境変数 `GOOGLE_OAUTH_CLIENT_ID`・`GOOGLE_OAUTH_CLIENT_SECRET`・`GOOGLE_OAUTH_REFRESH_TOKEN`。
+  **ユーザーが環境の設定画面で登録する**（値をリポジトリや会話に書かない）。新しいセッションから有効。
+- 通信先 `oauth2.googleapis.com`・`www.googleapis.com` は許可済み。
+- 分割アップロード（resumable、8MB 単位）。模擬サーバーで 20MB の保存・取り戻しが完全一致することを確認済み。
+  **本物の Drive での確認は未実施**（認証情報の登録待ち）。
+- コネクタ（3.1MB 以下）と Drive API のどちらでも、使うのは `Douga-Henshu` フォルダの中だけ。
+
 ## スキルと MCP
 
 セッション開始時に `~/.claude/skills/` へ入る（`setup/cloud-setup.sh`）:
