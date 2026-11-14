@@ -38,7 +38,7 @@ def collect_text(project: Path) -> str:
             continue
         s = f.read_text(encoding="utf-8")
         for pattern in (r"<style>.*?</style>", r"<script>.*?</script>", r"<!--.*?-->"):
-            s = re.sub(pattern, "", s, flags=re.S)
+            s = re.sub(pattern, "", s, flags=re.DOTALL)
         s = html.unescape(re.sub(r"<[^>]+>", " ", s))
         chars |= {c for c in s if not c.isspace()}
     chars |= {chr(c) for c in range(0x21, 0x7F)}
@@ -47,15 +47,24 @@ def collect_text(project: Path) -> str:
 
 
 def curl(args: list[str]) -> str:
-    result = subprocess.run(["curl", "-sS", "--fail", "-A", UA, *args], capture_output=True, text=True)
+    result = subprocess.run(
+        ["curl", "-sS", "--fail", "-A", UA, *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
     if result.returncode != 0:
         sys.exit(f"取得に失敗しました: {' '.join(args[-1:])}\n{result.stderr.strip()}")
     return result.stdout
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="作品で使う文字だけの Google Fonts を取得する")
-    parser.add_argument("project", type=Path, help="HyperFrames の作品フォルダ（index.html がある所）")
+    parser = argparse.ArgumentParser(
+        description="作品で使う文字だけの Google Fonts を取得する"
+    )
+    parser.add_argument(
+        "project", type=Path, help="HyperFrames の作品フォルダ（index.html がある所）"
+    )
     parser.add_argument(
         "--font",
         action="append",
@@ -73,7 +82,9 @@ def main() -> None:
     for spec in args.font:
         family, _, weights = spec.partition(":")
         family = family.strip()
-        for spec_weight in [w.strip() for w in (weights or "400").split(",") if w.strip()]:
+        for spec_weight in [
+            w.strip() for w in (weights or "400").split(",") if w.strip()
+        ]:
             italic = spec_weight.endswith("i")
             weight = spec_weight[:-1] if italic else spec_weight
             axis = f"ital,wght@1,{weight}" if italic else f"wght@{weight}"
@@ -86,7 +97,9 @@ def main() -> None:
             css = curl([url])
             sources = re.findall(r"src: url\((https://[^)]+)\) format\('woff2'\)", css)
             if len(sources) != 1:
-                sys.exit(f"{family} {spec_weight}: 想定外の応答です（書体名・太さを確認してください）\n{css[:300]}")
+                sys.exit(
+                    f"{family} {spec_weight}: 想定外の応答です（書体名・太さを確認してください）\n{css[:300]}"
+                )
             name = f"{family.replace(' ', '')}-{spec_weight}.woff2"
             curl(["-o", str(out_dir / name), sources[0]])
             size = (out_dir / name).stat().st_size
