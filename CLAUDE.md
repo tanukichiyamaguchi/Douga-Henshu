@@ -131,7 +131,14 @@ claude.ai の Google Drive コネクタ（`mcp__Google_Drive__*`）を使う。A
   小さいファイル向け。数十 MB 以上の動画素材は現実的でない（上限は未確認）。
 - 保存後は `viewUrl`（Drive で開くリンク）をユーザーに伝える。
 
-### 大きなファイル（3.1MB 超）は Drive API で（`tools/drive.py`）
+### 完成品の受け渡し（2026-11-14 ユーザー決定）
+
+- 完成品は **このアプリに直接送る**（SendUserFile。大きさの制限なし）。
+- **3.1MB 以下なら、Drive の `02_完成動画` にも保存する**（コネクタ。保存のたびに承認が必要）。
+- 3.1MB を超えるものの Drive 保存（下記 `drive.py`）は **ユーザーの判断で後日に見送り**。
+  認証情報が未登録のまま使おうとしない。
+
+### 大きなファイル（3.1MB 超）は Drive API で（`tools/drive.py`、現在は未設定）
 
 ```bash
 uv run python drive.py whoami                         # つながるアカウントとフォルダを確認
