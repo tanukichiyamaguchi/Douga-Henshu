@@ -15,6 +15,8 @@ dependencies = [
   # faster-whisper 1.2.1 は av.open(metadata_errors=...) を使う。PyAV 19 でこの引数が
   # 無くなり、音声の読み込みが失敗する（実測で確認。18.1.0 までは動く）。
   "av<19",
+  "byteplussdk-arkruntime==3.0.66",
+  "elevenlabs==2.78.0",
 ]
 
 [tool.uv]

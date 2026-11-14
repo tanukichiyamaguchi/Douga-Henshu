@@ -72,6 +72,33 @@ uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 - AI モデル（Chatterbox 約 3GB、Whisper 0.5〜1.6GB）は**初回使用時に**取得される
   （セッションごとに 1 回）。
 
+## 生成 AI（有料 API）
+
+リアルな映像・画像・音楽は外部の有料 API で作る（`tools/` で実行）。
+
+| 用途 | スクリプト | サービス | 通信先 |
+|---|---|---|---|
+| 映像 | `gen_video.py` | BytePlus ModelArk の Seedance | `ark.ap-southeast.bytepluses.com` |
+| 画像 | `gen_image.py` | BytePlus ModelArk の Seedream | 同上 |
+| 音楽（BGM） | `gen_music.py` | ElevenLabs Music | `api.elevenlabs.io` |
+
+```bash
+uv run python gen_video.py --model <SeedanceのモデルID> --prompt "..." --ratio 9:16 --duration 5 --out ../out/shot.mp4
+uv run python gen_image.py --model <SeedreamのモデルID> --prompt "..." --out ../out/image.png
+uv run python gen_music.py --prompt "明るいアコースティック、120BPM" --seconds 30 --out ../out/bgm.mp3
+```
+
+- **API キーはスクリプトにもリポジトリにも書かない。** クラウド環境のネットワークシークレットとして
+  保存し、プロキシが通信時に自動で付ける（スクリプトはダミー値を送る）。
+- **状況（2026-11-14 時点）:** 公式 SDK（`byteplussdk-arkruntime` 3.0.66 / `elevenlabs` 2.78.0）で
+  作成し、模擬サーバーで送信内容を確認済み。**本物のキーでの生成は未確認**（キー未登録）。
+  モデル ID と、生成映像のダウンロード元ホスト（許可リストへの追加が必要）は初回実行で確定させる。
+- Seedance の参考画像（`--image`）は公開 URL か BytePlus の素材 ID のみ。役割（role）は公式ドキュメントで
+  確認できた `reference_image` だけを使う。
+- どれも従量課金。試作は短い秒数・低い解像度から始め、作り直しは原因を特定してから行う。
+- Suno は公式の公開 API がない（2026 年 7 月に招待制プログラムを発表したのみ）ため使わない。
+  非公式の API は規約違反・法的リスクがあるので使わない。
+
 ## スキルと MCP
 
 セッション開始時に `~/.claude/skills/` へ入る（`setup/cloud-setup.sh`）:
