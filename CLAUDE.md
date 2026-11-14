@@ -25,9 +25,9 @@
 |---|---|
 | 編集の土台 | **HyperFrames**（`/hyperframes` スキルの作法に従う） |
 | 形 | **縦型 9:16・1080×1920・15〜30 秒** |
-| ナレーション | **入れる。ElevenLabs**（`narrate_elevenlabs.py`）。キー未登録の間は Chatterbox（`narrate.py`） |
+| ナレーション | **入れる。ElevenLabs**（`narrate_elevenlabs.py`、声 Harune・モデル eleven_v4）。ElevenLabs が使えない時は Chatterbox（`narrate.py`） |
 | 字幕 | 入れる（ナレーションに合わせて画面に表示） |
-| BGM | ElevenLabs Music（`gen_music.py`、歌なし）。キー未登録の間は入れない |
+| BGM | **入れる。ElevenLabs Music**（`gen_music.py`、歌なし、動画の長さに合わせる） |
 | 映像素材 | Seedance 2.5（`gen_video.py`）、9:16・720p・5 秒・`--no-audio` |
 | 画像素材 | GPT Image 2.5 flare（`gen_image_openai.py`）、`--size 1024x1536` |
 | 文字の書体 | Noto Sans JP |
@@ -56,7 +56,8 @@
 
 - Seedance 2.5 映像: 管理画面の見積もりで 720p・15 秒 ≒ 3.46 ドル（≒ 0.23 ドル／秒）。5 秒 ≒ 1.2 ドル。
 - GPT Image: トークン課金（画像出力 100 万トークンあたり 30 ドル）。1 枚の公式な金額は非公表。
-- ElevenLabs: 音楽・音声とも従量課金（金額は契約プランの画面で確認）。
+- ElevenLabs 音声: 料金表で v4 は 1,000 文字あたり 0.08 ドル（30 秒のナレーションは約 150〜200 文字）。
+- ElevenLabs 音楽: 契約プランのクレジットから引かれる（正確な単価は契約画面で確認）。
 
 ### してはいけないこと
 
@@ -133,7 +134,7 @@ uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 | 画像（標準） | `gen_image_openai.py` | OpenAI の GPT Image（既定 `gpt-image-2.5-flare`） | `api.openai.com` |
 | 画像（予備） | `gen_image.py` | BytePlus ModelArk の Seedream | `ark.ap-southeast.bytepluses.com` |
 | 音楽（BGM） | `gen_music.py` | ElevenLabs Music | `api.elevenlabs.io` |
-| ナレーション | `narrate_elevenlabs.py` | ElevenLabs の音声合成（声とモデルはキー登録後に決める） | `api.elevenlabs.io` |
+| ナレーション | `narrate_elevenlabs.py` | ElevenLabs の音声合成（標準: 声 Harune・モデル `eleven_v4`） | `api.elevenlabs.io` |
 
 ```bash
 uv run python gen_video.py --prompt "..." --ratio 9:16 --resolution 720p --duration 5 --no-audio --out ../out/shot.mp4
@@ -154,7 +155,11 @@ uv run python gen_music.py --prompt "明るいアコースティック、120BPM"
     このアカウントでは `gpt-image-2.5-sunburst`・`gpt-image-2.6-flare`・`gpt-image-2.6-sunburst` も使える
     （`GET https://api.openai.com/v1/models` で確認）。OpenAI のキーは `sk-` で始まる。`key_` で始まるのは
     キーの管理番号（ID）で、キーの代わりにはならない。
-  - ElevenLabs: キー未登録。`gen_music.py`・`narrate_elevenlabs.py` は模擬サーバーで確認済み（本番は未確認）。
+  - ElevenLabs: キー登録済み（Creator プラン、月 131,000 クレジット）。**音声合成と音楽の生成を確認済み**。
+    日本語対応モデルは `eleven_v4`・`eleven_v4_turbo`・`eleven_v3`・`eleven_multilingual_v2` など（`--list-models`）。
+    声は共有ボイスの Harune（`c2XJrw7TvNGtOc6r0ijG`）をユーザーが試聴して選んだ。約 50 文字で約 8 秒、
+    文字起こしで台本どおりと確認。BGM は 10 秒が約 5 秒で生成（MP3・ステレオ・44.1kHz）。
+    日本語の共有ボイスの探し方: `GET https://api.elevenlabs.io/v1/shared-voices?language=ja`。
   - 他に使えるモデル（例）: 映像 `dreamina-seedance-2-0-fast-260128`、画像 `dola-seedream-5-0-pro-260628`。
     一覧は `curl -H "Authorization: Bearer proxy-injected" https://ark.ap-southeast.bytepluses.com/api/v3/models`。
 - Seedance の参考画像（`--image`）は公開 URL か BytePlus の素材 ID のみ。役割（role）は公式ドキュメントで

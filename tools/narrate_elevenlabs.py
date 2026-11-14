@@ -3,15 +3,15 @@
 使い方（tools/ ディレクトリで実行）:
   uv run python narrate_elevenlabs.py --list-voices            # 使える声の一覧（日本語の声を優先表示）
   uv run python narrate_elevenlabs.py --list-models            # 使えるモデルと対応言語
-  uv run python narrate_elevenlabs.py --voice-id <声のID> \
-      --text "新しいお店がオープンしました。" --out ../out/narration.mp3
+  uv run python narrate_elevenlabs.py --text "新しいお店がオープンしました。" --out ../out/narration.mp3
   uv run python narrate_elevenlabs.py --voice-id <ID> --text-file script.txt --out ../out/narration.mp3
 
 前提:
   - API キーはクラウド環境の「ネットワークシークレット」として保存されており、
     通信時にプロキシが自動で付ける。このスクリプトにキーを書かない・渡さない。
-  - 声（--voice-id）とモデル（--model）の標準は、キー登録後に API の一覧で確認して決める。
-    環境変数 ELEVENLABS_VOICE_ID / ELEVENLABS_TTS_MODEL でも指定できる。
+  - 標準は声 Harune・モデル eleven_v4（2026-11-14 に試聴と文字起こしで確認）。
+    --voice-id / --model か、環境変数 ELEVENLABS_VOICE_ID / ELEVENLABS_TTS_MODEL で変えられる。
+  - 共有ボイス（ElevenLabs の Voice Library の声）は、ライブラリに追加しなくても ID で直接使える。
   - 実在の人物の声を真似る場合は、本人の許可が必要。
   - 文字数に応じた従量課金。
 """
@@ -27,8 +27,10 @@ from elevenlabs.client import ElevenLabs
 
 DUMMY_KEY = "injected-by-proxy"
 BASE_URL = os.environ.get("ELEVENLABS_BASE_URL", "https://api.elevenlabs.io")
-# 日本語に対応した多言語モデル。キー登録後に --list-models で確認して見直す。
-DEFAULT_MODEL = "eleven_multilingual_v2"
+# 2026-11-14 に --list-models で日本語対応を確認した最新モデル。
+DEFAULT_MODEL = "eleven_v4"
+# 標準の声: Harune（共有ボイス。女性・若め・落ち着いたナレーション）。ユーザーが試聴して選んだ。
+DEFAULT_VOICE = "c2XJrw7TvNGtOc6r0ijG"
 
 
 def main() -> None:
@@ -36,7 +38,7 @@ def main() -> None:
     parser.add_argument("--text", help="読み上げる文章")
     parser.add_argument("--text-file", type=Path, help="読み上げる文章のファイル（UTF-8）")
     parser.add_argument("--out", type=Path, help="保存先（.mp3）")
-    parser.add_argument("--voice-id", default=os.environ.get("ELEVENLABS_VOICE_ID"), help="声の ID（--list-voices で確認）")
+    parser.add_argument("--voice-id", default=os.environ.get("ELEVENLABS_VOICE_ID", DEFAULT_VOICE), help="声の ID（既定: Harune）")
     parser.add_argument("--model", default=os.environ.get("ELEVENLABS_TTS_MODEL", DEFAULT_MODEL), help=f"モデル（既定: {DEFAULT_MODEL}）")
     parser.add_argument("--lang", help="言語コード（例: ja。モデルが対応している場合だけ指定する）")
     parser.add_argument("--seed", type=int, help="乱数の種")
