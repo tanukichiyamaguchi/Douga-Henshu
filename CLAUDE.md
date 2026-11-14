@@ -9,7 +9,7 @@
 |---|---|
 | `remotion/` | Remotion（React で動画）。`src/Root.tsx` に動画を登録する。サンプル: `SampleTitle`（日本語タイトル）、`SampleThree`（Three.js の 3D） |
 | `hyperframes/` | HyperFrames（HTML + GSAP で動画）。`index.html` が本体。専用の `CLAUDE.md` あり |
-| `tools/` | Python ツール（uv 管理）: `narrate.py`（Chatterbox ナレーション）、`transcribe.py`（faster-whisper 字幕）、`tighten_pauses.py`（ナレーションの間を詰める）、`blender_render.py`（Blender 3D） |
+| `tools/` | Python ツール（uv 管理）: `narrate.py`（Chatterbox ナレーション）、`transcribe.py`（faster-whisper 字幕）、`tighten_pauses.py`（ナレーションの間を詰める）、`fetch_fonts.py`（作品で使う文字だけの Google Fonts を取得）、`blender_render.py`（Blender 3D） |
 | `setup/cloud-setup.sh` | セッション開始前に依存関係・描画用ブラウザ・スキルを入れるスクリプト |
 | `.mcp.json` | Chrome DevTools MCP（書き出し前の画面確認用） |
 | `out/` など | 書き出し物。Git には入れない（`.gitignore` 済み） |
@@ -30,7 +30,7 @@
 | BGM | **入れる。ElevenLabs Music**（`gen_music.py`、歌なし、動画の長さに合わせる） |
 | 映像素材 | Seedance 2.5（`gen_video.py`）、9:16・720p・5 秒・`--no-audio` |
 | 画像素材 | GPT Image 2.5 flare（`gen_image_openai.py`）、`--size 1024x1536` |
-| 文字の書体 | Noto Sans JP |
+| 文字の書体 | **作品の雰囲気に合う Google Fonts を選ぶ**（`fetch_fonts.py`）。Noto Sans JP だけの見た目は「もっといい感じのフォントに」と言われた（2026-11-14）。美容・上質な広告の例: 気持ちの言葉と価格は Shippori Mincho B1（しっぽり明朝）、札・情報は Zen Kaku Gothic New、英字の店名は Playfair Display |
 | 費用 | **1 本あたり生成 AI の合計 10 ドルまでは確認なしで使ってよい**。超えそうなら生成前に見積もりを示して確認 |
 | お届け | アプリに直接送る（SendUserFile）。3.1MB 以下なら Drive の `02_完成動画` にも保存 |
 
@@ -73,9 +73,10 @@
 - Meta 公式の推奨: 9:16・音あり・字幕あり、最初の 3 秒で要点かブランドを見せる、要点は安全域の中。
   化粧品・美容施術の広告は 18 歳以上に配信（Meta の Health and Wellness ポリシー）。
   「あなたは〜？」と個人の特性（健康・身体など）を決めつける問いかけはしない。
-- **表示のルール（景品表示法など）**: 「約2倍」のような比較は、比較対象と個人差の注記を同じ画面に、読める
-  時間（`check` の `line_unread` を通る長さ）出す。価格は「初回限定」「税込」などの条件を価格と同じ札に入れる。
-  「No.1」は根拠（範囲・調査）を示せる時だけ。生成映像には「映像はイメージです」。化粧品は「認定」でなく「登録（届出）」。
+- **注意書きは入れない**（「※」の注記、比較の根拠や個人差の注記、「映像はイメージです」など。2026-11-14
+  ユーザー決定）。そのぶん、比較や効果の表現（「約2倍」など）は、ユーザーが根拠を示せる内容だけにする。
+  価格は「初回限定」「税込」などの条件を価格と同じ札に入れる。「No.1」は根拠（範囲・調査）を示せる時だけ。
+  化粧品は「認定」でなく「登録（届出）」。
 - **UGC 風でも、架空のお客様の体験談は作らない**（AI の人物に実体験を語らせない）。語り手は店や商品側の声にする。
 - 実在のスタッフの写真は、本人の了承をユーザーに確認し、加工・AI 生成をせずそのまま使う。
 
@@ -112,6 +113,7 @@ uv run python narrate.py --text "読み上げる文章" --out ../out/narration.w
 uv run python transcribe.py ../out/narration.wav --out-dir ../out
 uv run python tighten_pauses.py ../out/narration.mp3 --tempo 1.04 --out ../out/narration-tight.wav   # 文の間を 0.22 秒に詰め、4% 速く
 uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
+uv run python fetch_fonts.py ../work/<作品> --font "Shippori Mincho B1:600,800" --font "Zen Kaku Gothic New:700,900"   # 使う文字だけの書体を assets/fonts/ へ
 ```
 
 ## 実測で分かった注意点
@@ -182,8 +184,19 @@ uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
   なので scale・blur・opacity で代用する。
 - **`check` の `line_unread`（表示時間が短い）は誤検知もある**: JSON の `measured` に `opacity: null` の
   コマがあると、そこで文字が消えたと数えられる。`measured` を見て、本当に短いものだけ直す。
-- **注記の 2 行目が折り返すと 3 行になり、上の要素に重なる**。28px・左右の余白 12px・最大幅 900px なら
-  30 字が 1 行に収まり、帯も x 114〜966px（安全域の中）になる。
+
+### 書体（フォント）の入れ方（2026-11-14）
+
+- **HyperFrames が名前だけで使えるのは同梱の 18 書体**（Noto Sans JP・Playfair Display・EB Garamond・
+  Montserrat など）。それ以外は作品の `assets/fonts/` にファイルを置き、その書体を使う場面の `<style>` に
+  `@font-face` を書く（無いと lint の `font_family_without_font_face` で止まる）。
+- **`fetch_fonts.py` で、作品の文字だけを切り出したファイルを Google Fonts から取る**（CSS API の `text=`。
+  1 ファイル 20〜50KB）。最後に貼り付け用の `@font-face` を表示する。**文字を変えたら取り直す**（ファイルに
+  無い文字は、`font-family` で次に書いた書体で描かれる）。`font-family` の 2 番目には同梱の書体（Noto Sans JP）を書く。
+- 選び方: 候補を実際の場面の静止画に並べて比べる（Playwright で HTML を撮影）。7 案を比べ、金色の光の
+  映像と美容サロンには明朝の見出しが合った。明朝は細い線が背景に沈みやすいので、小さい字は 600 以上・影付き。
+- Shippori Mincho B1 は 800 まで、Zen Kaku Gothic New は 900 まで。CSS の `font-weight` は、ファイルを取った太さと
+  同じ値にする。
 
 ## 生成 AI（有料 API）
 
