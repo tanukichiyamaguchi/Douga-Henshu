@@ -98,7 +98,10 @@ uv run python gen_music.py --prompt "明るいアコースティック、120BPM"
   - BytePlus: キー登録済み。**Seedance 2.5 と Seedream 5.5 で実際の生成を確認済み**
     （映像 720p・5 秒は約 135 秒、画像は約 17 秒）。既定モデルは `dreamina-seedance-2-5-260628`（映像）と
     `dola-seedream-5-5-261028`（画像）。映像の取得に失敗しても、`--task-id` で料金をかけずに取り直せる。
-  - OpenAI: キー未登録。`gen_image_openai.py` は模擬サーバーで確認済み（本番は未確認）。
+  - OpenAI: キー登録済み。**`gpt-image-2.5-flare` で実際の生成を確認済み**（1536×1024・約 19 秒・PNG 約 2.3MB）。
+    このアカウントでは `gpt-image-2.5-sunburst`・`gpt-image-2.6-flare`・`gpt-image-2.6-sunburst` も使える
+    （`GET https://api.openai.com/v1/models` で確認）。OpenAI のキーは `sk-` で始まる。`key_` で始まるのは
+    キーの管理番号（ID）で、キーの代わりにはならない。
   - ElevenLabs: キー未登録。
   - 他に使えるモデル（例）: 映像 `dreamina-seedance-2-0-fast-260128`、画像 `dola-seedream-5-0-pro-260628`。
     一覧は `curl -H "Authorization: Bearer proxy-injected" https://ark.ap-southeast.bytepluses.com/api/v3/models`。
@@ -120,7 +123,7 @@ claude.ai の Google Drive コネクタ（`mcp__Google_Drive__*`）を使う。A
 - **保存（出力）**: `create_file` の `base64Content` にファイル参照
   `sha256:<sha256>:<絶対パス>` を渡し、`contentMimeType: video/mp4`・
   `disableConversionToGoogleType: true`・`parentId` に `02_完成動画` の ID を指定する。
-  保存のたびにユーザーの承認が必要。131KB の MP4 で動作確認済み。
+  保存のたびにユーザーの承認が必要。131KB の MP4 と 2.25MB の PNG で動作確認済み。
   **コネクタは 1 回 4.2MB まで（ファイル本体は約 3.1MB まで）**。5.3MB の画像は「上限超過」で送れなかった
   （2026-11-14 実測）。それより大きい完成品は、コネクタでは保存できない。分割・圧縮などで勝手に
   回避せず、ユーザーに保存方法を確認する（このアプリへの直接送付は可能）。
