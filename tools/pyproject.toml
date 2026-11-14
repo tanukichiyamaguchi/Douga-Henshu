@@ -1,7 +1,7 @@
 [project]
 name = "douga-henshu-tools"
 version = "0.1.0"
-description = "動画制作用の Python ツール（Blender・字幕・ナレーション）"
+description = "動画制作用の Python ツール（Blender・字幕・ナレーション・映像処理）"
 requires-python = "==3.13.*"
 dependencies = [
   "bpy==5.3.0",
@@ -20,12 +20,29 @@ dependencies = [
   "openai==3.51.0",
   # tighten_pauses.py（ナレーションの間を詰める）で使う。他の依存関係が固定している版と同じ。
   "numpy==2.5.4",
+  # 映像処理テクニック 100 選（tools/vfx。.claude/skills/video-techniques/ から使う）
+  "opencv-contrib-python-headless==4.14.0.94",
+  "mediapipe==1.2.3",
+  # torch 2.6.0 と対になる版（CPU 版。下の [tool.uv.sources] で pytorch-cpu から取る）
+  "torchvision==0.21.0",
+  "scenedetect==0.7.3",
+  "spandrel==0.4.2",
+  "pycolmap==4.2.1",
+  "easyocr==1.7.2",
 ]
 
 [tool.uv]
 package = false
 # Claude Code のクラウド環境（Linux x86_64）だけを対象に依存関係を固定する。
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+# OpenCV（cv2）は opencv-contrib-python-headless の 1 つだけにする。mediapipe・easyocr・scenedetect が
+# 別の配布物（GUI 版や contrib なし版）を求めるが、どれも同じ cv2 を上書きし合うため入れない
+# （起こり得ない条件を付けて、依存関係から外す）。
+override-dependencies = [
+  "opencv-python; sys_platform == 'never'",
+  "opencv-python-headless; sys_platform == 'never'",
+  "opencv-contrib-python; sys_platform == 'never'",
+]
 
 # GPU のないクラウド環境向けに、PyTorch は CPU 版を使う。
 # （PyPI の標準版は CUDA 用ライブラリを大量に含むため）
@@ -37,3 +54,4 @@ explicit = true
 [tool.uv.sources]
 torch = { index = "pytorch-cpu" }
 torchaudio = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }

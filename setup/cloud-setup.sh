@@ -28,7 +28,11 @@ log "1/6 Remotion の依存関係と描画用ブラウザ"
 log "2/6 HyperFrames の CLI と描画用ブラウザ"
 (cd hyperframes && npx --yes "hyperframes@${HYPERFRAMES_VERSION}" browser ensure)
 
-log "3/6 Python ツール（Blender / faster-whisper / Chatterbox）"
+log "3/6 Python ツール（Blender / faster-whisper / Chatterbox / 映像処理 tools/vfx）"
+# MediaPipe（tools/vfx）の本体は libEGL.so.1 と libGLESv2.so.2 を必要とする（無いと読み込みで失敗する。2026-11-14 実測）
+if ! ldconfig -p | grep -q "libEGL.so.1" || ! ldconfig -p | grep -q "libGLESv2.so.2"; then
+  apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends libegl1 libgles2
+fi
 (cd tools && uv sync --frozen)
 
 log "4/6 Chrome DevTools MCP を取得（.mcp.json から起動される）"
