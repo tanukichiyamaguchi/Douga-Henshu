@@ -99,6 +99,23 @@ uv run python gen_music.py --prompt "明るいアコースティック、120BPM"
 - Suno は公式の公開 API がない（2026 年 7 月に招待制プログラムを発表したのみ）ため使わない。
   非公式の API は規約違反・法的リスクがあるので使わない。
 
+## Google Drive 連携
+
+claude.ai の Google Drive コネクタ（`mcp__Google_Drive__*`）を使う。API キー等は不要。
+
+- 使ってよいのは **マイドライブ直下の `Douga-Henshu` フォルダの中だけ**。他のフォルダ
+  （書類・個人情報を含む）は検索・閲覧・変更しない。フォルダ ID は公開リポジトリに書かず、
+  `search_files` で `title = 'Douga-Henshu'` のフォルダを探してから中を見る。
+  - `01_素材`: ユーザーが置く素材（画像・ロゴ・台本・音声など）。ここから取り込む。
+  - `02_完成動画`: 書き出した完成品を保存する。
+- **保存（出力）**: `create_file` の `base64Content` にファイル参照
+  `sha256:<sha256>:<絶対パス>` を渡し、`contentMimeType: video/mp4`・
+  `disableConversionToGoogleType: true`・`parentId` に `02_完成動画` の ID を指定する。
+  保存のたびにユーザーの承認が必要。131KB の MP4 で動作確認済み。大きなファイルの上限は未確認。
+- **取り込み（入力）**: `download_file_content` は中身を base64 で会話に流すため、画像・台本など
+  小さいファイル向け。数十 MB 以上の動画素材は現実的でない（上限は未確認）。
+- 保存後は `viewUrl`（Drive で開くリンク）をユーザーに伝える。
+
 ## スキルと MCP
 
 セッション開始時に `~/.claude/skills/` へ入る（`setup/cloud-setup.sh`）:
