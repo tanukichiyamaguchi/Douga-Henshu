@@ -157,6 +157,34 @@ uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 - **BGM の終わりを動画の終わりに合わせる**: ElevenLabs Music は指定の長さより手前で曲を終えることがある
   （20 秒指定で 18.3 秒から無音）。小節の頭で 1 小節を複製して挿入すると、テンポを変えずに延ばせる。
 
+### 同じ広告の作り直し（v2・演出の改善）で分かったこと（2026-11-14）
+
+ユーザーの指摘: 問題は画質ではなく**演出・動画編集**（素人っぽく、感情が動かない）。v2 で効いたこと:
+
+- **曲を時計にする**: 120BPM なら拍 0.5 秒・小節 2 秒。カット・文字の打ち込み・効果音を拍に置き、山場
+  （ドロップ）を見せ場の映像（目が開く瞬間など）に合わせる。文字は声の言葉の出だしに合わせる。
+- **ElevenLabs Music の `--plan`（区間ごとの構成）は、区間の雰囲気の指定を守らないことがある**（6 秒目に
+  ドロップを指定 → 14 秒付近になった／全体が一定のノリになった）。ドロップは編集で作る: 曲の前半に
+  `asendcmd` で周波数を時間で上げる `lowpass`（250→3200Hz）をかけ、ドロップの拍から元の音に戻す。
+- **Seedance の 15 秒・複数カットの指示は、カットの境目が指示の秒数からずれる**（12.0 秒 → 12.375 秒）。
+  使う前に `ffmpeg -i in.mp4 -vf "select='gte(scene,0)',metadata=print:file=-" -f null -` で境目を測る。
+- **スローモーションは `data-playback-rate` だとカクつく**（24fps の素材のコマが重なる）。`minterpolate`
+  で 30fps に補間した素材を作り、等速で置く。手や髪の動きでも崩れは見られなかった（静止画で確認）:
+  `ffmpeg -ss 開始 -i in.mp4 -an -vf "tpad=stop_mode=clone:stop_duration=0.25,setpts=PTS/0.6,minterpolate=fps=30:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1,trim=duration=秒,setpts=PTS-STARTPTS" -g 6 -bf 0 -crf 15 out.mp4`
+  （`tpad` は末尾のコマが欠けるのを防ぐため。1080×1920 で出力 1 秒あたり CPU で約 20〜25 秒かかる）
+- **文字を顔・目・まつげに重ねない**: 映像の構図を `transform-origin: 540px 1920px; transform: scale(1.1〜1.18)`
+  （下を基準に拡大）にすると顔が 100〜170px 上がり、文字（900px より下）が服の上に来る。目の寄りは
+  `scale(1.18)`＋`y: -140` で、眉とまぶたの間・下まつげの下に文字の場所を作った。
+- **明るい服（クリーム色など）の上の白文字**は、文字の下だけココア色 40〜48% のグラデーションを敷く。
+  ピンクの強調語は白い縁取り＋影（`check` の `contrast_aa_failure` が出た所）。
+- **HyperFrames**: 入れ子の場面で `data-start` が 0 でない映像には `data-hf-media-start-basis="local"` が要る
+  （`nested_media_start_basis_ambiguous`）。`letterSpacing` を GSAP で動かすとエラー（`gsap_non_transform_motion`）
+  なので scale・blur・opacity で代用する。
+- **`check` の `line_unread`（表示時間が短い）は誤検知もある**: JSON の `measured` に `opacity: null` の
+  コマがあると、そこで文字が消えたと数えられる。`measured` を見て、本当に短いものだけ直す。
+- **注記の 2 行目が折り返すと 3 行になり、上の要素に重なる**。28px・左右の余白 12px・最大幅 900px なら
+  30 字が 1 行に収まり、帯も x 114〜966px（安全域の中）になる。
+
 ## 生成 AI（有料 API）
 
 リアルな映像・画像・音楽は外部の有料 API で作る（`tools/` で実行）。
