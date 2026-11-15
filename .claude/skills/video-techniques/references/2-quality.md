@@ -205,7 +205,7 @@ cd tools && uv run python -m vfx deflicker [-h] [-o OUT] [--json JSON] [--start 
 
 ## 38. カラー化（`colorize`） 未
 
-- 何をする: 白黒の映像に色を付ける
+- 何をする: モノクロの映像を、色のある映像にする
 - 頼み方の例: 「古い白黒の映像に色を付けて」
 
 ## 39. アンシャープマスク（`sharpen`） ◎
