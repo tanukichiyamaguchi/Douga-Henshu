@@ -29,7 +29,9 @@
 - **RAFT**: `ai.RaftFlow(large=True)` の重みを、torchvision の既定（KITTI でも学習した C_T_SKHT_V2。KITTI のデータは
   CC BY-NC-SA 3.0）から C_T_V2（FlyingChairs・FlyingThings3D だけ）に変えた。small の既定は前から C_T_V2。
 - **56（matte）**: 縮めて計算したアルファを元の大きさに戻した後のガイデッドフィルター（eps 1e-4）をやめた（下の
-  「分かっている癖」の guidedFilter。1080×1920 の試験で、かけない方が境目の誤差が小さかった）。
+  「分かっている癖」の guidedFilter。1080×1920 の正解つきの試験で、境目の帯の平均誤差 19.3 → 12.2。eps 1e-2 では 14.0）。
+- **60（mask-track）**: 0.5 で切る前のガイデッドフィルターの eps を 1e-3 から 1e-2 にした（同じ癖。正解つきの合成で
+  境目の IoU 0.801 → 0.842・0.716 → 0.753。かけない時より良かった）。
 
 ## 構成
 
@@ -167,8 +169,6 @@ def frame_diff(a):
 
 ## 直していない課題（2026-11-15 時点）
 
-- **60（mask-track）**: SAM 2 の確率を 0.5 で切る前のガイデッドフィルターが eps 1e-3 で、上の癖のとおりただの平均になって
-  いる（縁を輪郭に合わせず、形を丸める働き）。担当の測った数値（IoU 0.987 など）は、この状態のもの。
 - 共通にまとめると重複が減る物（任意）: UperNet の読み込み（`matte._Scene`・`generate._SkySeg`）、時間のグラフと縦並べ
   （`scenes.py`・`understand.py` の `_chart`・`_stack`）、モジュールの中に持っているモデル（ViTMatte・Florence-2 large・
   NAFNet・Real-ESRGAN wdn・CRAFT・PP-OCRv3・WeChat QR・EasyOCR の japanese_g2）、`track.py` の HyperFrames 用の `.js` の
