@@ -5,6 +5,8 @@
   uv run python narrate_elevenlabs.py --list-models            # 使えるモデルと対応言語
   uv run python narrate_elevenlabs.py --text "新しいお店がオープンしました。" --out ../out/narration.mp3
   uv run python narrate_elevenlabs.py --voice-id <ID> --text-file script.txt --out ../out/narration.mp3
+  uv run python narrate_elevenlabs.py --model eleven_multilingual_v2 --text-file script.txt --speed 1.1 --out ../out/narration.mp3
+      # 少し速く読む（eleven_v4 では --speed が効かないので、v4 の声を詰めたい時は文の間の無音を詰める）
 
 前提:
   - API キーはクラウド環境の「ネットワークシークレット」として保存されており、
@@ -42,6 +44,14 @@ def main() -> None:
     parser.add_argument("--model", default=os.environ.get("ELEVENLABS_TTS_MODEL", DEFAULT_MODEL), help=f"モデル（既定: {DEFAULT_MODEL}）")
     parser.add_argument("--lang", help="言語コード（例: ja。モデルが対応している場合だけ指定する）")
     parser.add_argument("--seed", type=int, help="乱数の種")
+    parser.add_argument(
+        "--speed",
+        type=float,
+        help=(
+            "話す速さ（1.0 が標準。大きいほど速い）。声に保存されている他の設定（安定度など）はそのまま使う。"
+            "eleven_multilingual_v2 では効くが、eleven_v4 では無視される（2026-11-14 実測）"
+        ),
+    )
     parser.add_argument("--list-voices", action="store_true", help="使える声の一覧を表示する")
     parser.add_argument("--list-models", action="store_true", help="使えるモデルと対応言語を表示する")
     args = parser.parse_args()
@@ -73,6 +83,13 @@ def main() -> None:
         sys.exit("--text か --text-file で読み上げる文章を指定してください。")
 
     options = {key: value for key, value in {"language_code": args.lang, "seed": args.seed}.items() if value is not None}
+    if args.speed is not None:
+        # 速さだけを渡すと、他の項目が API の既定値で上書きされて声質が変わる
+        # （Harune は類似度 0.01 など既定値と違う設定が保存されている。2026-11-14 に確認）。
+        # そのため、声に保存された設定を読んでから速さだけを差し替える。
+        stored = client.voices.settings.get(args.voice_id)
+        options["voice_settings"] = stored.model_copy(update={"speed": args.speed})
+        print(f"声の設定: {options['voice_settings']}")
     audio = client.text_to_speech.convert(
         voice_id=args.voice_id,
         text=text,

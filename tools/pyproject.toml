@@ -18,6 +18,8 @@ dependencies = [
   "byteplussdk-arkruntime==3.0.66",
   "elevenlabs==2.78.0",
   "openai==3.51.0",
+  # tighten_pauses.py（ナレーションの間を詰める）で使う。他の依存関係が固定している版と同じ。
+  "numpy==2.5.4",
 ]
 
 [tool.uv]
