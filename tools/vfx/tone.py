@@ -1547,7 +1547,7 @@ def _hqdn3d(sigma: float, c: float) -> str:
     ),
 )
 def low_light(a: argparse.Namespace) -> None:
-    """暗い映像を明るく見せる（露出を上げて明るい所は丸め、増えたノイズを消す）。"""
+    """暗く写った場面を、明るく見えるようにする（露出を上げて明るい所は丸め、増えたノイズを消す）。"""
     info = _probe(a.src)
     core.require(0.1 <= a.strength <= 1.0, "--strength は 0.1〜1 にしてください")
     core.require(a.max_gain >= 1, "--max-gain は 1 以上にしてください")
@@ -2279,7 +2279,7 @@ def _clip_stats(img: np.ndarray) -> dict[str, float]:
     ),
 )
 def tonemap(a: argparse.Namespace) -> None:
-    """明暗差を見やすい範囲に収める（HDR の映像を SDR に変換／SDR の白飛び・黒つぶれを局所的に抑える）。"""
+    """明るさの幅を、ふつうの画面で見やすく収める（HDR の映像を SDR に変換／SDR の白飛び・黒つぶれを局所的に抑える）。"""
     info = _probe(a.src)
     kind = _hdr_kind(info)
     method = a.method

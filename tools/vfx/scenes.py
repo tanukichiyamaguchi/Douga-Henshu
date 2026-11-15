@@ -1643,7 +1643,7 @@ def _ffmpeg_blur(src: str) -> float | None:
     ),
 )
 def blur_detect(a: argparse.Namespace) -> None:
-    """コマごとの鮮明さ（ラプラシアンの分散）を測り、同じ場面の中で相対的にぼけたコマを見つける。画像なら鮮明さの地図を作る。"""
+    """コマごとの鮮明さ（ラプラシアンの分散）を測り、同じ場面の中で、ほかよりピントの甘いコマを探す。画像なら鮮明さの地図を作る。"""
     info = core.probe(a.src)
     if info.is_image:
         _blur_image(a)

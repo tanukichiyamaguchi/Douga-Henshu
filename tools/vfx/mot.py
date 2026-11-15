@@ -325,7 +325,7 @@ def _clean_dets(dets: list[Any], high: float, ratio: float) -> list[Any]:
 
 
 class _Cuts:
-    """カットの変わり目を見つける（縮小したコマの HSV の差の平均。PySceneDetect の ContentDetector と同じ考え方）。
+    """カットが切り替わる所を見つける（縮小したコマの HSV の差の平均。PySceneDetect の ContentDetector と同じ考え方）。
 
     差（0〜255）が threshold 以上で、前の変わり目から min_gap コマ以上たっていれば変わり目とする。
     """

@@ -1819,7 +1819,7 @@ def bg_blur(a: argparse.Namespace) -> None:
     core.log(f"保存: {out}")
 
 
-# ── 59 アウトペインティング（画面の外側を描き足す） ───────────────────────────
+# ── 59 アウトペインティング（画面の外側に続きを描く） ───────────────────────────
 
 
 def _parse_ratio(text: str) -> float:

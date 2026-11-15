@@ -1740,7 +1740,7 @@ def _ffmpeg_gray(y: np.ndarray, vf: str) -> np.ndarray:
     ),
 )
 def sharpen(a: argparse.Namespace) -> None:
-    """輪郭をくっきりさせる（明るさだけ。ノイズを強めない下限と、縁の白い輪を抑える上限つき）。"""
+    """輪郭の明暗差を強めて、くっきり見せる（明るさだけ。ノイズを強めない下限と、縁の白い輪を抑える上限つき）。"""
     info = core.probe(a.src)
     core.require(
         a.amount > 0 and a.radius > 0,
