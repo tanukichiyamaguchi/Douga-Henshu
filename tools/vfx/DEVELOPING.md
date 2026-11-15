@@ -3,6 +3,34 @@
 映像処理テクニック 100 選を、この環境（GPU なし・CPU 4 コア・メモリ 15GB・許可された通信先のみ）で
 実行できるようにする道具。使う人向けの説明は `.claude/skills/video-techniques/SKILL.md`。
 
+## 状況（2026-11-15）
+
+- **100 項目のうち 74 項目を実装した**。13 のモジュールを担当ごとに分けて作り、各担当が正解つきの試験をして状態
+  （◎ 54・○ 19・△ 1）を付けた。**別の AI による検証はしていない**。
+- 残りの 26 項目（`face.py`・`body.py`・`camera.py`・`compose.py`・`optics.py` の担当分）は作っていない。ユーザーの判断で、
+  74 項目で完了とした。これらのファイルには、担当の番号を書いた冒頭の説明と空の `NOTES` だけがある。
+- 26 項目に使える共通の部品は既にある: `models.FILES` の MediaPipe（`mp_pose_lite`・`mp_pose_full`・`mp_pose_heavy`・
+  `mp_hand_landmarker`・`mp_gesture`・`mp_face_landmarker`・`mp_face_detector`）、`detectors.FaceDetector`（YuNet）と
+  `face_recognizer`（SFace）。`models.FILES` の `gfpgan` は、まだどのコマンドも使っていない（使う前にライセンスを確かめる）。
+- 2026-11-15 の仕上げで、74 のコマンドすべてを短い素材で 1 回ずつ動かし、全部が書き出しまで終わることを確かめた
+  （出力の確認画像の一部を目で見て、色や形が崩れていないことも確かめた）。
+
+### 2026-11-15 に共通の部品で直したこと
+
+- **色の変換**: `core.read_frames`・`core.VideoWriter` は、ffmpeg の既定の変換（丸めが粗い）をやめ、正確な変換
+  （`core.SWS_FLAGS`）を使う。書き出しには BT.709 の色の印（`core.BT709_TAGS`）を付ける。前は書いて読み戻すと白 255 が
+  251・灰色 128 が 124 になった。今は 255・128 のまま、色見本の差は 1 以内。HyperFrames に置いて書き出しても、MP4 は
+  灰色の段と色見本が元の値から ±2 以内（透過つき WebM は写真の部分が平均 1 段暗く描かれる。HyperFrames 側の読み込み）。
+  既存の切り抜き WebM の透明度は、前と同じ値で読める。
+- **時刻**: `core.t_of` は、`--start` がコマの境目でない時、最初のコマの本当の時刻から数える（`read_frames` は start
+  以降の最初のコマから読む。24fps・start 5.8 → 5.8333 秒のコマ。8 通りの start で画素が一致することを確かめた）。
+  `read_frames(fps=...)` で間引いて読んだ時は `snap=False`。
+- **人物の切り抜き**: `ai.PersonSegmenter` は結果を写して返す（MediaPipe の結果の画素は次の呼び出しで解放される）。
+- **RAFT**: `ai.RaftFlow(large=True)` の重みを、torchvision の既定（KITTI でも学習した C_T_SKHT_V2。KITTI のデータは
+  CC BY-NC-SA 3.0）から C_T_V2（FlyingChairs・FlyingThings3D だけ）に変えた。small の既定は前から C_T_V2。
+- **56（matte）**: 縮めて計算したアルファを元の大きさに戻した後のガイデッドフィルター（eps 1e-4）をやめた（下の
+  「分かっている癖」の guidedFilter。1080×1920 の試験で、かけない方が境目の誤差が小さかった）。
+
 ## 構成
 
 | ファイル | 中身 | 変更してよい人 |
@@ -54,6 +82,12 @@ def frame_diff(a):
 - **表示**: 日本語。最後に `保存: <パス>` を出す。数字の要約（何件見つけたか等）も出す。
 - **失敗**: 使う人に伝える失敗は `core.VfxError("日本語の説明")`（cli がまとめて表示）。素の例外を握りつぶさない。
 - **重い import**（torch・transformers・mediapipe）は関数の中で行う（`python -m vfx list` を速く保つため）。
+- **時刻**は `core.t_of(コマ番号, fps, start)` で求める（`--start` がコマの境目でない時の分も合わせてくれる）。
+  `read_frames(fps=...)` で間引いて読んだ時は `snap=False` を付ける。
+- **自前で ffmpeg に BGR のコマを渡して書き出す時**は、`-vf core.to_yuv_filter()` と `core.BT709_TAGS` を組で付ける
+  （`-pix_fmt yuv420p` だけだと、ffmpeg の既定の変換で白 255 が 251 になる）。
+- **argparse の help の文字に `%` を書く時は `%%`** にする（そのままだと `--help` が ValueError で落ちる。3 つの担当で起きた）。
+- **MediaPipe の結果の画素**（`numpy_view()`）は次の呼び出しで解放される。取っておくなら写す。
 - **モデル**: 単体ファイルは `models.fetch_spec(ModelFile(url, license))`（curl で取得、`~/.cache/douga-vfx/`）。
   Hugging Face は transformers で読む（`~/.cache/huggingface/`）。PyTorch を使う時は `models.torch_setup()`。
   **商用で使えるライセンス（Apache-2.0・MIT・BSD など）だけ**。HF の `license:` を API で確かめ、`other` や
@@ -80,7 +114,11 @@ def frame_diff(a):
 
 ## 試験素材
 
-`<スクラッチパッド>` = `/tmp/claude-0/-home-user-Douga-Henshu/ab02e0dc-2f09-56b1-a1d6-ed872e314e04/scratchpad`
+作った時（2026-11-14〜15）のセッションの一時的な場所にあった物。**新しいセッションには残っていない**（試験の台本・
+確認画像も同じ。リポジトリには入れていない）。続きを作る時は、同じような素材を用意し直す（広告の映像は `work/` の
+生成素材から作った。`work/` も Git には入っていない）。
+
+`<スクラッチパッド>` = 作った時のセッションのスクラッチパッド（`/tmp/claude-0/.../scratchpad`）
 
 - `<スクラッチパッド>/vfx-test/media/`（広告の生成映像を 540×960 に縮めた物。人物はすべて AI 生成）
   - `story540.mp4`（15 秒・24fps。カット 5 つ: 0〜3.0 ビューラーの寄り／3.0〜5.79 洗面所の鏡の前／5.79〜8.88 日差しで
@@ -99,6 +137,48 @@ def frame_diff(a):
     `mp-woman_hands.jpg`、`mp-pose.jpg`（全身のヨガ）、`mp-cat_and_dog.jpg`、`mp-cats_and_dogs.jpg`、`mp-portrait.jpg`
     （**実在の人物**。検出の確認だけに使い、顔を加工する試験には使わない）
 - `<スクラッチパッド>/vfx-test/synth/`（自分で作った試験映像の置き場。ffmpeg の `testsrc2` などで作ってよい）
+
+## 分かっている癖（各担当の報告と、仕上げの時の実測）
+
+- **OpenCV 4.14 の `cv2.ximgproc.guidedFilter` は、3 チャンネル・0〜1 の float の案内画で eps が 1e-3 以下だと、縁を
+  保たず、ただの平均（箱型のぼかし）と同じ値になる**（灰色・色つきの段差で確かめた。eps 2e-3 から縁を保ち始め、1e-2 で
+  保つ）。1 チャンネルの案内画では、小さい eps で縁を保つ（逆）。3 チャンネルの案内画には eps 1e-2 前後を使う。
+- OpenCV 4.14 の dnn で `models.FILES['youtu_reid']`（YouTu ReID）を使う時、1 回に入れる枚数を途中で変えると、その網の
+  以後の出力がすべて壊れる（最後は NaN）。1 枚ずつか、常に同じ枚数で通す（`mot._BodyEmbed` は 1 枚ずつ）。
+- BiRefNet（onnxruntime）は、作業メモリの使い回し（`enable_cpu_mem_arena`・`enable_mem_pattern`）を切らないと、2 回目の
+  実行で 12GB まで増える（切ると lite 6.7GB・portrait 8.0GB）。
+- transformers 5.2.0: DETR panoptic は背骨の ResNet-50 を作るのに timm が要る（入れていない）。`matte.py` は torchvision の
+  ResNet-50 に差し替えて動かしている（公式と出力が一致）。`XCLIPProcessor(videos=...)` は空の辞書を返すので、tokenizer と
+  image_processor を直接使う（`understand._XClip`）。SigLIP 2 は `AutoProcessor`・`AutoTokenizer` が失敗するので、
+  `GemmaTokenizerFast` と `AutoImageProcessor` を別々に読む（`ai.ImageText`）。
+- `detectors.ObjectDetector` には種類をまたいだ重複の除去が無い（同じ犬の枠に「犬 0.99」と「猫 0.54」が出た）。
+  `find.py` は `_nms(dets, 0.7, same_label=False)` で除いている。Faster R-CNN v2 は同じ人に全身と上半身の 2 つの枠を出す
+  ことがある（`mot.py` の `--nested` で入れ子の枠を除ける）。
+- `ai.DepthEstimator` はコマごとに正規化するので、動画ではちらつく。`generate.py` の `_DepthVideo`（フローで時間方向に
+  そろえる）で、ちらつきが 0.023 → 0.012 になった。
+- `ai.optical_flow` の farneback は、模様の少ない顔と大きな動きで崩れる（誤差 2.4〜17.8px。DIS は 0.06〜0.2px）。DIS を使う。
+- ffmpeg の `tmedian` は最初と最後のコマを落として 1 コマずれる（`restore.py` は `tpad` で直した）。
+- `core.draw_text` は呼ぶたびに画像全体を PIL に変えるので、全コマに文字を描くと遅い（`scenes.py` は札を一度だけ作って
+  貼る `_label`・`_paste` を持つ）。
+- `core.IMAGE_EXTS` に `.avif`・`.heic`・`.jxl` が無く、AVIF（HDR の静止画）は動画として扱われる（`tone.py` は自前で読む）。
+- `flow.py` の block-match の `--search` は PyAV（av 18.1.0）の filter.Graph と side_data を使う。av の版を上げる時は確かめる。
+- 試験の出力でディスクが一杯になったことがある（作っている時に空きが 8KB）。大きな中間ファイル（.npz など）は読んだら消す。
+- 速さの数値の多くは、他の担当と CPU を分け合った状態（負荷 4〜10）で測った物。
+
+## 直していない課題（2026-11-15 時点）
+
+- **60（mask-track）**: SAM 2 の確率を 0.5 で切る前のガイデッドフィルターが eps 1e-3 で、上の癖のとおりただの平均になって
+  いる（縁を輪郭に合わせず、形を丸める働き）。担当の測った数値（IoU 0.987 など）は、この状態のもの。
+- 共通にまとめると重複が減る物（任意）: UperNet の読み込み（`matte._Scene`・`generate._SkySeg`）、時間のグラフと縦並べ
+  （`scenes.py`・`understand.py` の `_chart`・`_stack`）、モジュールの中に持っているモデル（ViTMatte・Florence-2 large・
+  NAFNet・Real-ESRGAN wdn・CRAFT・PP-OCRv3・WeChat QR・EasyOCR の japanese_g2）、`track.py` の HyperFrames 用の `.js` の
+  書き出しとカットの見分け（`_CutWatch`）。
+- `models.FILES['lama']` に sha256 を入れる（担当が取得したファイルで
+  `344c77bbcb158f17dd143070d1e789f38a66c04202311ae3a258ef66667a9ea9`）。
+- `detectors.ObjectDetector`（accurate）は短い辺を 800px に拡大して検出するので遅い（540×960 で 1 コマ 2〜2.5 秒。
+  混んでいると 15 秒）。大きさを選べる引数があるとよい。`detectors.color_for(1)` と `color_for(5)` は色が近い。
+- 日本語の OCR を強くするには、PaddleOCR（PP-OCRv5）などの新しい依存関係が要る（白い文字に黒い縁のテロップは EasyOCR で
+  正解率 6〜8 割）。フレーム補間を AI（RIFE。MIT）にするには、モデルの構造のコードを入れる判断が要る。
 
 ## してはいけないこと
 

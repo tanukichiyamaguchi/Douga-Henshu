@@ -10,6 +10,8 @@
 | `remotion/` | Remotion（React で動画）。`src/Root.tsx` に動画を登録する。サンプル: `SampleTitle`（日本語タイトル）、`SampleThree`（Three.js の 3D） |
 | `hyperframes/` | HyperFrames（HTML + GSAP で動画）。`index.html` が本体。専用の `CLAUDE.md` あり |
 | `tools/` | Python ツール（uv 管理）: `narrate.py`（Chatterbox ナレーション）、`transcribe.py`（faster-whisper 字幕）、`tighten_pauses.py`（ナレーションの間を詰める）、`fetch_fonts.py`（作品で使う文字だけの Google Fonts を取得）、`blender_render.py`（Blender 3D） |
+| `tools/vfx/` | 映像処理テクニック 100 選のうち 74 項目のコマンド（`uv run python -m vfx list`）。使い方はスキル `video-techniques`、作り方は `tools/vfx/DEVELOPING.md` |
+| `.claude/skills/` | このリポジトリ専用のスキル: `video-techniques`（映像処理テクニック。手ぶれ補正・切り抜き・ノイズ除去・カット検出など） |
 | `setup/cloud-setup.sh` | セッション開始前に依存関係・描画用ブラウザ・スキルを入れるスクリプト |
 | `.mcp.json` | Chrome DevTools MCP（書き出し前の画面確認用） |
 | `out/` など | 書き出し物。Git には入れない（`.gitignore` 済み） |
@@ -116,6 +118,9 @@ uv run python transcribe.py ../out/narration.wav --out-dir ../out
 uv run python tighten_pauses.py ../out/narration.mp3 --tempo 1.04 --out ../out/narration-tight.wav   # 文の間を 0.22 秒に詰め、4% 速く
 uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 uv run python fetch_fonts.py ../work/<作品> --font "Shippori Mincho B1:600,800" --font "Zen Kaku Gothic New:700,900"   # 使う文字だけの書体を assets/fonts/ へ
+uv run python -m vfx list                      # 映像処理テクニック 100 選の一覧と状態（74 項目が使える）
+uv run python -m vfx info 56                   # 1 項目の中身・実測・限界と引数
+uv run python -m vfx matte ../work/<作品>/assets/in.mp4 -o ../work/<作品>/assets/cut.webm   # 例: 人物を髪まで切り抜く（透過 WebM）
 ```
 
 ## 実測で分かった注意点
@@ -280,6 +285,21 @@ uv run python fetch_fonts.py ../work/<作品> --font "Shippori Mincho B1:600,800
   区切りに合わせ、無音の中で 10ms 重ねてつなぐ）。前後の声・長さ・字幕のタイミングが変わらない。耳で確かめられない
   ので、直す前と後を続けて入れた短い聞き比べ用の音声も一緒に送る。
 
+### 映像処理テクニック 100 選（tools/vfx）で分かったこと（2026-11-15）
+
+- ユーザーから画像で渡された「AI動画の映像処理テクニック100選」を記録し、74 項目をコマンドにした。**ユーザーの判断で
+  74 項目で完了**（「現在の74項目で完了で大丈夫です」）。残りの 26 項目は、頼まれたらまだ無いことを伝え、作るかを確認する。
+  状態の記号は作った AI が試験して付けた物で、別の AI による検証はしていない。
+- **ffmpeg に BGR のコマを渡して H.264 にする時、`-pix_fmt yuv420p` だけだと色の変換の丸めが粗く、白 255 が 251・
+  灰色 128 が 124 に下がる**（読み戻す側の既定の変換でも切り捨てで暗くなる）。
+  `-vf "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int+full_chroma_inp+bitexact,format=yuv420p"`
+  と `-colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv` で、元の値のまま残る（tools/vfx の
+  `core.VideoWriter` はこの形）。HyperFrames は動画の色の印に従って読み（印が無い物は BT.601 とみなす）、自分の書き出しには
+  BT.709 の印を付ける。
+- MediaPipe は libEGL・libGLESv2 が無いと読み込めない（`setup/cloud-setup.sh` で入れる）。
+- `uv run --with <パッケージ>` で作った一時的な環境は `~/.cache/uv` に残る。CUDA 版の torch などが入り、2 つで約 10GB に
+  なってディスクの枠を圧迫した。使い終わったら消す。
+
 ## 生成 AI（有料 API）
 
 リアルな映像・画像・音楽は外部の有料 API で作る（`tools/` で実行）。
@@ -377,6 +397,7 @@ uv run python drive.py download 台本.txt --out ../out/input/   # 01_素材 か
 セッション開始時に `~/.claude/skills/` へ入る（`setup/cloud-setup.sh`）:
 Remotion Skills（`remotion-*`）、HyperFrames（`hyperframes` ほか。`reverse-any-video` と
 `style-sampling` は有料の HyperFrames Pro 機能）、Impeccable（デザインの講評・仕上げ）。
+このリポジトリの `.claude/skills/` にあるスキル（`video-techniques`）は、リポジトリと一緒に読み込まれる。
 Chrome DevTools MCP は `.mcp.json` で起動する（Google への利用統計送信はオフ）。
 
 ## 入れていないもの（理由）

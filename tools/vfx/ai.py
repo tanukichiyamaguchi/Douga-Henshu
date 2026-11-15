@@ -67,14 +67,15 @@ class PersonSegmenter:
         )
 
     def __call__(self, frame: np.ndarray, t_ms: int | None = None) -> np.ndarray:
+        # MediaPipe の結果の画素は、次の呼び出しで解放される。写さずに返すと、取っておいた地図が壊れたり
+        # 異常終了したりした（2026-11-14 実測）ので、必ず写して返す。
         res = mp_detect(self.task, "segment", frame, t_ms if self.video else None)
         if self.kind == "multiclass":
-            return np.ascontiguousarray(
-                np.squeeze(res.category_mask.numpy_view()), dtype=np.uint8
-            )
+            m = res.category_mask.numpy_view()
+            return np.array(np.squeeze(m), dtype=np.uint8, order="C", copy=True)
         masks = res.confidence_masks
         m = masks[-1].numpy_view() if len(masks) > 1 else masks[0].numpy_view()
-        return np.ascontiguousarray(np.squeeze(m), dtype=np.float32)
+        return np.array(np.squeeze(m), dtype=np.float32, order="C", copy=True)
 
 
 # ── 動き ──────────────────────────────────────────────────────────────────
@@ -99,14 +100,18 @@ def optical_flow(
 
 
 class RaftFlow:
-    """torchvision の RAFT（精度が高いが CPU では遅い）。"""
+    """torchvision の RAFT（精度が高いが CPU では遅い）。
+
+    重みは small・large とも C_T_V2（FlyingChairs と FlyingThings3D だけで学習）。large の torchvision の既定
+    （C_T_SKHT_V2）は KITTI（データは CC BY-NC-SA 3.0）でも学習しているので使わない。
+    """
 
     def __init__(self, large: bool = False) -> None:
         self.torch = torch_setup()
         from torchvision.models import optical_flow as of
 
         if large:
-            self.weights = of.Raft_Large_Weights.DEFAULT
+            self.weights = of.Raft_Large_Weights.C_T_V2
             self.net = of.raft_large(weights=self.weights).eval()
         else:
             self.weights = of.Raft_Small_Weights.DEFAULT

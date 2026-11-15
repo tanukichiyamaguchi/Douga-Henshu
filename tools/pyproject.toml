@@ -29,6 +29,14 @@ dependencies = [
   "spandrel==0.4.2",
   "pycolmap==4.2.1",
   "easyocr==1.7.2",
+  # tools/vfx が直接 import する物。他の依存関係と一緒に入っていた版と同じ版を書く（依存が変わっても消えないように）
+  "scipy==1.18.1",
+  "scikit-image==0.26.0",
+  "matplotlib==3.11.2",
+  "onnxruntime==1.32.0",
+  "pillow==12.3.0",
+  "transformers==5.2.0",
+  "huggingface-hub==1.33.0",
 ]
 
 [tool.uv]

@@ -1020,7 +1020,7 @@ def multi_track(a: argparse.Namespace) -> None:
     t_det, t_begin, n = 0.0, time.time(), 0
     with writer:
         for i, frame in enumerate(frames):
-            t = core.t_of(i, fps, a.start)
+            t = core.t_of(i, fps, a.start, snap=fps == info.fps)
             if cuts is not None and cuts(frame) and i > 0:
                 for tracker in trackers.values():
                     tracker.reset()
@@ -1865,7 +1865,7 @@ def count_people(a: argparse.Namespace) -> None:
     t_begin = time.time()
     with core.VideoWriter(out, fps) as writer:
         for i, frame in enumerate(frames):
-            t = core.t_of(i, fps, a.start)
+            t = core.t_of(i, fps, a.start, snap=fps == info.fps)
             people = people_in(frame)
             vis = _count_view(frame, people, t)
             writer.write(vis)

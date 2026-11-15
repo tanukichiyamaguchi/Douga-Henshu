@@ -33,6 +33,21 @@ JP_FONTS = [
 # HyperFrames で途中から再生しても重くならないよう、キーフレームを細かく入れる（CLAUDE.md）
 MP4_ARGS = ["-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p"]
 MP4_ARGS += ["-g", "6", "-bf", "0", "-movflags", "+faststart"]
+# 色の変換（RGB と YUV の行き来）を正確にする swscale の設定。ffmpeg の既定の変換は丸めが粗く、
+# 書き出して読み戻すと白 255 が 251・灰色 128 が 124 に下がった（HyperFrames で書き出しても 253・126）。
+# この設定で 255・128 のまま、色見本の差も 1 以内になる（2026-11-15 実測）。
+SWS_FLAGS = "accurate_rnd+full_chroma_int+full_chroma_inp+bitexact"
+# 書き出す動画に付ける色の印（HyperFrames の書き出しと同じ BT.709・TV レンジ）。印が無いと、再生する側が
+# 変換の仕方を推測する（ffmpeg と HyperFrames は BT.601 とみなす。BT.709 とみなすプレーヤーもある）。
+BT709_TAGS = ["-colorspace", "bt709", "-color_primaries", "bt709"]
+BT709_TAGS += ["-color_trc", "bt709", "-color_range", "tv"]
+
+
+def to_yuv_filter(pix_fmt: str = "yuv420p") -> str:
+    """BGR（BGRA）のコマを BT.709 の YUV に正確に変換する -vf。必ず BT709_TAGS と組で使う。"""
+    return (
+        f"scale=out_color_matrix=bt709:out_range=tv:flags={SWS_FLAGS},format={pix_fmt}"
+    )
 
 
 class VfxError(RuntimeError):
@@ -250,11 +265,11 @@ def read_frames(
     filters = []
     if fps:
         filters.append(f"fps={fps}")
-    if (w, h) != (info.width, info.height):
-        filters.append(f"scale={w}:{h}:flags=area")
-    if filters:
-        cmd += ["-vf", ",".join(filters)]
-    cmd += ["-an", "-f", "rawvideo", "-pix_fmt", "bgra" if alpha else "bgr24", "-"]
+    # 大きさを変えない時も scale を通す（色の変換を正確にするため。入力に色の印があれば、それに従う）
+    pix = "bgra" if alpha else "bgr24"
+    filters += [f"scale={w}:{h}:flags=area+{SWS_FLAGS}", f"format={pix}"]
+    cmd += ["-vf", ",".join(filters)]
+    cmd += ["-an", "-f", "rawvideo", "-pix_fmt", pix, "-"]
     frame_bytes = w * h * channels
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     assert proc.stdout is not None
@@ -348,13 +363,11 @@ class VideoWriter:
                 "1:a",
                 "-shortest",
             ]
+        yuv = "yuva420p" if self.alpha else "yuv420p"
+        # 色の変換を正確にし、BT.709 の印を付ける（SWS_FLAGS の説明）
+        cmd += ["-vf", to_yuv_filter(yuv), *BT709_TAGS]
         if self.path.suffix.lower() == ".webm":
-            cmd += [
-                "-c:v",
-                "libvpx-vp9",
-                "-pix_fmt",
-                "yuva420p" if self.alpha else "yuv420p",
-            ]
+            cmd += ["-c:v", "libvpx-vp9", "-pix_fmt", yuv]
             cmd += [
                 "-b:v",
                 "0",
@@ -493,8 +506,15 @@ def write_json(path: str | Path, data: Any) -> Path:
     return path
 
 
-def t_of(i: int, fps: float, start: float = 0.0) -> float:
-    """コマ番号から秒（元の動画の中での時刻）を求める。"""
+def t_of(i: int, fps: float, start: float = 0.0, *, snap: bool = True) -> float:
+    """コマ番号から秒（元の動画の中での時刻）を求める。
+
+    read_frames(start=...) は start 以降の最初のコマから読む。start がコマの境目でない時、最初のコマの時刻は
+    start より後になる（24fps・start 5.8 → 5.8333 秒のコマ。2026-11-15 実測）。snap=True はこれに合わせる。
+    read_frames(fps=...) で間引いて読んだ時は snap=False にする（コマは start + i/fps の時刻の近く）。
+    """
+    if snap and start > 0:
+        start = math.ceil(start * fps - 1e-6) / fps
     return round(start + i / fps, 4)
 
 

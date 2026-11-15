@@ -94,7 +94,7 @@ NOTES: dict[int, dict[str, str]] = {
         "status": "◎",
         "how": "vitmatte（既定）: MediaPipe の人物と髪の地図から 3 値の地図（trimap）を作り（境目の内外 = 短い辺の 1.2%、"
         "地図が 0.1〜0.9 の自信のない所、髪の周り 10 倍の幅を「分からない」に）、ViTMatte small（hustvl/vitmatte-small-"
-        "composition-1k、Apache-2.0）でアルファを求める。長い辺が 1280px を超える画は縮めて計算し、ガイデッドフィルターで"
+        "composition-1k、Apache-2.0）でアルファを求める。長い辺が 1280px を超える画は縮めて計算し、線形の拡大で元の大きさに"
         "戻す。続けて縁の色を推定し直す（Forte・Pitié 2021 の Blur-Fusion、2 段）。birefnet: BiRefNet lite の ONNX"
         "（rembg の配布、MIT。1024×1024 固定・ImageNet の正規化・onnxruntime の作業メモリの使い回しを切る）。"
         "birefnet-portrait: 同じく人物用（MIT）。guided: 人物の地図をガイデッドフィルターで整えるだけ。--mask で人以外も"
@@ -110,7 +110,10 @@ NOTES: dict[int, dict[str, str]] = {
         "毛先まで残り、guided はにじむ（目で確認）。60 のマスクを --mask で渡した動画: IoU 0.993（8 コマ）。速さとメモリ:"
         " vitmatte 540×960 で 1 コマ 1.0〜1.9 秒・約 1.4GB、1080×1920 で 3.9 秒・約 2.0GB（540 の結果と IoU 0.992）。"
         "birefnet 10〜11 秒・最大 6.7GB（作業メモリの使い回しを入れたままだと 2 回目で 12GB）、birefnet-portrait"
-        " 17〜18 秒・最大 8.0GB（入れたままでは途中でメモリ不足で止められた）、guided 0.03 秒",
+        " 17〜18 秒・最大 8.0GB（入れたままでは途中でメモリ不足で止められた）、guided 0.03 秒。1080×1920（はねた毛の"
+        "合成の前景・アルファ・背景を 2 倍にして重ねた物。正解も 2 倍）で、縮めて計算した後の戻し方を比べた境目の帯の"
+        "平均誤差（0〜255。空 / 街の背景）: 線形の拡大だけ 12.2 / 16.6、ガイデッドフィルター eps 0.01 で 14.0 / 18.8、"
+        "以前の eps 0.0001（OpenCV 4.14 ではただの平均になる）で 19.3 / 22.3。2026-11-15 に線形の拡大だけに変えた",
         "limits": "vitmatte の粗い地図は MediaPipe の人物なので、人以外は --mask が要る（人物の地図が椅子なども含むと、"
         "それも残る）。髪の周りを広く「分からない」にするので、背景に細い線（街灯・電線）が多いと少し拾う（街の背景で"
         "余計 22%。--hair-band を小さくすると減る）。動画はコマごとの計算（ちらつきは --smooth で抑える）。birefnet は"
@@ -562,7 +565,8 @@ class _Person:
 
     kind: person（人物。selfie。[背景, 人]）／ parts（部位。multiclass。PARTS_JA の 6 種類）／ hair（髪。[背景, 髪]）。
     結果の画素は、結果の物が生きているうちに写し取る（MediaPipe の結果の画素は呼び出しの後で解放される。
-    共有の ai.PersonSegmenter は写さずに返すので、取っておいて後で読むと壊れた値か異常終了になった。2026-11-14 実測）。
+    共有の ai.PersonSegmenter は写さずに返していたので、取っておいて後で読むと壊れた値か異常終了になった。2026-11-14 実測。
+    2026-11-15 に共有側も写すように直した）。
     """
 
     def __init__(self, kind: str, video: bool) -> None:
@@ -1554,7 +1558,7 @@ class _VitMatte:
     """ViTMatte（small。hustvl/vitmatte-small-composition-1k。Apache-2.0）。
 
     3 値の地図（trimap: 白 = 必ず残す・黒 = 必ず消す・灰 = 分からない）の灰の帯の中で、髪の毛などの細かいアルファを求める。
-    長い辺が work px より大きい画は縮めて計算し、元の大きさに戻してからガイデッドフィルターで輪郭を合わせる。
+    長い辺が work px より大きい画は縮めて計算し、線形の拡大で元の大きさに戻す。
     """
 
     def __init__(self, work: int = 1280) -> None:
@@ -1578,8 +1582,10 @@ class _VitMatte:
         alpha = self.net(**inputs).alphas[0, 0].numpy()[: img.shape[0], : img.shape[1]]
         alpha = alpha.astype(np.float32)
         if f < 1.0:
+            # 元の大きさに戻すだけにする。以前はガイデッドフィルター（半径 2・eps 1e-4）をかけていたが、OpenCV 4.14 では
+            # 3 チャンネルの案内画で eps が小さいとただの平均（ぼかし）になり、1080×1920 の試験で境目の誤差が増えていた
+            # （かけない方が誤差が小さい。2026-11-15 実測。NOTES[56] の measured）
             alpha = cv2.resize(alpha, (w, h), interpolation=cv2.INTER_LINEAR)
-            alpha = _guided(frame, alpha, 2, 1e-4)
         alpha[trimap == 255] = 1.0
         alpha[trimap == 0] = 0.0
         return np.clip(alpha, 0.0, 1.0)
