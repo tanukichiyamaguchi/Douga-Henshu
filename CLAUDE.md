@@ -48,7 +48,7 @@
 | 字幕 | 入れる（ナレーションの要点を、画面の言葉で見せる）。**1 画面の文字は 15 文字以内**（2026-11-17 ユーザーの指示「文字数は1画面に15文字以内に収める必要がある」）。言葉は、下の「文字と札」のとおり、画像生成 AI に描かせる |
 | BGM | **入れる。ElevenLabs Music**（`gen_music.py`、歌なし、動画の長さに合わせる） |
 | 映像素材 | Seedance 2.5（`gen_video.py`）、9:16・720p・5 秒・`--no-audio` |
-| 画像素材 | **GPT Image 2.6 sunburst・品質 max・いちばん大きいサイズ**（`gen_image_openai.py --model gpt-image-2.6-sunburst --quality max --size 2160x3840`。横長は `3840x2160`）。2026-11-17 ユーザーの指示「今後は、2.6sunburstでMAXの品質で出して欲しい。今後は最高峰のレベルで出して。」。下の「毎回守ること」 |
+| 画像素材 | **GPT Image 2.6 flare・品質 high・1024×1536**（`gen_image_openai.py --model gpt-image-2.6-flare --quality high --size 1024x1536`。横長は `1536x1024`）。2026-11-17 ユーザーの指示「やはり、2.6-flareにして、それ以外の設定は以前と同じに戻して」（同じ日に一度 2.6 sunburst・品質 max・2160×3840 にしていた）。下の「毎回守ること」 |
 | 絵の土台 | **どの場面も、実写（生成した映像・写真）を土台にする。コードで描いた絵と色の面だけの場面を作らない**（2026-11-16 ユーザーの指摘「この部分がダサすぎる。AIっぽい仕上がりになっている」。下の「毎回守ること」） |
 | トンマナ（配色・書体・雰囲気） | **動画ごとに決める。前の作品のものを引き継がない**（2026-11-15 ユーザー決定。下の「トンマナの決め方」） |
 | 文字と札 | **Claude が文字を作らない。文字と札（カード・丸い札・帯）を、Claude が HTML/CSS で組まない**（2026-11-17 ユーザーの指示「文字と札をあなたが組むのは辞めろと以前伝えたはずです。今後絶対辞めろ」「そしてClaudeが文字を作成するのはやめて」）。画面の言葉・数字・ボタンは、画像生成 AI（GPT Image）に立体の文字として描かせ、それを動かす（描かせる、という方法は Claude の解釈。下の「毎回守ること」）。「Google Fonts を選んで組む」という 2026-11-14 の決まりは、この指示で使わなくなった |
@@ -493,29 +493,27 @@
   （Claude の判断。2026-11-15 は納品の報告で確かめるよう伝えた）。
   **依頼で「生成してほしい」と言われた時は、モデルの人物も、仕上がり（before/after）も生成する**（2026-11-15 メンズの広告
   「画像はホームページの写真は使わずこちらで生成して欲しい」「25歳で爽やかでかっこいいビジネスマンの男性をモデルにする」）。
-- **画像は、いちばん上の設定で作る: GPT Image 2.6 sunburst・品質 max・いちばん大きいサイズ**（2026-11-17 ユーザーの言葉
-  「今後は、2.6sunburstでMAXの品質で出して欲しい。今後は最高峰のレベルで出して。次回以降でいい。」。その前の言葉は
-  「Gptimage2.5の出力レベルはもっとあげられる？表で出して」。このセッションで作った 5 枚〔4 回の呼び出し〕は、すべて 2.5 flare・
-  品質 high・1024×1536 だった、と答えていた。
-  納品済みの動画は作り直していない〔「次回以降でいい」〕）。
-  - コマンドは `uv run python gen_image_openai.py --model gpt-image-2.6-sunburst --quality max --size 2160x3840 --prompt "…" --out …`
-    （縦長。横長は `--size 3840x2160`）。スクリプトの既定値も同じにした（2026-11-17、ユーザーの確認を受けて main に入れた。
-    値を書かずに呼んでも、この設定になる）。
-  - ここからは Claude の解釈: 「最高峰のレベル」は、品質に加えて大きさも、受け付けられるいちばん上にすること、と受け取った。
-    2160×3840 は、SDK の説明で「2560×1440 を超える大きさは試験的」とされている。試した 1 枚では、崩れは見られず、1440×2560
-    より細部（泡の粒など）がはっきりしていた。正方形などほかの縦横比の上限は試していない（縦横とも 16 の倍数・縦横比 1:3〜3:1・
-    最大 3840×2160 の範囲で、いちばん大きくする）。
-  - SDK（openai 3.51.0）の説明では、品質 xhigh・max が使えるのは 2.5 の flare と sunburst だけと書かれているが、2.6 sunburst でも
-    max はエラーにならず、high の 4 倍のトークンを使った（max が効いていると見た）。断られた時は、使える中でいちばん上の
-    設定にして、何を下げたかを報告する。
-  - **透明の背景（`--background transparent`）も、2.6 sunburst・max で使えた**（2026-11-17 に 1 枚試した。画面の文字を GPT Image に
-    描かせる決まり〔上の「何で文字を作るか」〕と、この設定を一緒に使うため）。SDK の説明で透明の背景が使えると書かれているのは
-    2.5 の flare と sunburst だけだが、断られなかった。1024×1024・立体の文字「無料相談」で 133 秒。四隅は完全に透明（画面の 71%）、
-    文字の所の不透明さは 253〜254（255 にはならない。重ねた時の透けは 1% 未満）。4 字とも正しく描けていた（原寸で 1 字ずつ見た）。
-    2160×3840 と透明の背景の組み合わせは、まだ試していない。
-  - 画像の編集（`images.edit`。before の絵を作る時など）も、同じ設定を先に試す（2.6 sunburst・max の編集は、まだ試していない）。
-  - 1 枚の時間は約 2 分、PNG は 10MB 近くになる。Seedance に最初のコマとして渡す時は、`gen_video.py` が長い辺 1920px の JPEG に
-    縮めて送る。映像にした場面の画質は、Seedance の解像度で決まる（この設定で細かくなるのは、絵をそのまま見せる場面）。
+- **画像は GPT Image 2.6 flare・品質 high・1024×1536（縦長。横長は 1536×1024）で作る**（2026-11-17 ユーザーの言葉「やはり、
+  2.6-flareにして、それ以外の設定は以前と同じに戻して」。「以前と同じ」が、それまでの制作で毎回指定していた設定〔品質 high・
+  1024×1536〕か、スクリプトの前の既定〔品質・大きさとも指定なし = API 側の auto〕かを尋ね、ユーザーは「high・1024×1536」を選んだ）。
+  - 経緯: 同じ日のはじめに「Gptimage2.5の出力レベルはもっとあげられる？表で出して」と尋ねられ、それまでの絵はすべて 2.5 flare・
+    品質 high・1024×1536 だったと答えた。続けて「今後は、2.6sunburstでMAXの品質で出して欲しい。今後は最高峰のレベルで出して。
+    次回以降でいい。」と言われ、2.6 sunburst・品質 max・いちばん大きいサイズ（2160×3840。大きさもいちばん上にするのは Claude の
+    解釈）を既定にした。その後に、上の言葉で 2.6 flare・high・1024×1536 に改めた。改めた理由は聞いていない。
+  - コマンドは `uv run python gen_image_openai.py --model gpt-image-2.6-flare --quality high --size 1024x1536 --prompt "…" --out …`
+    （横長は `--size 1536x1024`）。画面の文字など、背景を透明にする絵は `--background transparent` を足す。スクリプトの既定値も
+    同じにする PR を出した（道具の変更なので、マージはユーザーの確認を受けてから。入っていなくても、上のとおり値を書いて呼ぶ）。
+  - **2.6 flare・high・1024×1536・透明の背景で使えた**（2026-11-17 に 1 枚試した。立体の文字「無料相談」で 9 秒。四隅は完全に
+    透明〔画面の 80%〕、文字の所の不透明さは 253〜254〔重ねた時の透けは 1% 未満〕。4 字とも正しく描けていた）。透明の背景を付けない
+    写真風の絵も、同じ設定で 9 秒・1024×1536 でできた。SDK の説明で透明の背景が使えると書かれているのは 2.5 の flare と
+    sunburst だけだが、断られなかった。トークン数は、道具が出さないので測っていない。
+  - 品質と大きさを上げる時の実測（この設定に戻す前に測った物。上げる時の目安）: 2.6 sunburst は、品質 max が通り、high の 4 倍の
+    トークンを使った。2160×3840 は 1 枚約 2 分・PNG 約 9.5MB で、1440×2560 より細部がはっきりしていた（数字は上の「費用の目安」）。
+    SDK の説明では、xhigh・max が使えるのは 2.5 の flare と sunburst だけ。2.6 flare で max を使えるかは、試していない。
+  - 画像の編集（`images.edit`。before の絵を作る時など）を 2.6 flare で使えるかは、まだ試していない。断られた時は、使えるモデルに
+    して、何を替えたかを報告する。
+  - Seedance に最初のコマとして渡す時は、`gen_video.py` が絵を JPEG（品質 93）にして送る（長い辺が 1920px を超える絵だけ縮める。
+    1024×1536 は大きさを変えない）。
 - **音（声・BGM・効果音）は、接続済みの API で作る**（2026-11-15「効果音や声、BGMなどの音関係は何で出力されている？
   私はAPIを繋いだはず」）。声は ElevenLabs の音声合成、BGM は ElevenLabs Music、効果音は ElevenLabs の効果音生成
   （`gen_sfx.py`）。計算で合成した音を、API の音の代わりに使わない（この言葉の時、声と BGM は ElevenLabs だったが、効果音は
@@ -1656,7 +1654,7 @@ Git には入っていない。数字の目安は Claude が決めた物。
 | 用途 | スクリプト | サービス | 通信先 |
 |---|---|---|---|
 | 映像 | `gen_video.py` | BytePlus ModelArk の Seedance | `ark.ap-southeast.bytepluses.com`（生成した映像の取得は `ark-acg-ap-southeast-1.tos-ap-southeast-1.volces.com`） |
-| 画像（標準） | `gen_image_openai.py` | OpenAI の GPT Image（2026-11-17 から `gpt-image-2.6-sunburst`・品質 max・2160×3840。上の「毎回守ること」） | `api.openai.com` |
+| 画像（標準） | `gen_image_openai.py` | OpenAI の GPT Image（2026-11-17 から `gpt-image-2.6-flare`・品質 high・1024×1536。上の「毎回守ること」） | `api.openai.com` |
 | 画像（予備） | `gen_image.py` | BytePlus ModelArk の Seedream | `ark.ap-southeast.bytepluses.com` |
 | 音楽（BGM） | `gen_music.py` | ElevenLabs Music | `api.elevenlabs.io` |
 | 効果音 | `gen_sfx.py` | ElevenLabs の効果音生成 | `api.elevenlabs.io` |
@@ -1666,7 +1664,7 @@ Git には入っていない。数字の目安は Claude が決めた物。
 uv run python gen_video.py --prompt "..." --ratio 9:16 --resolution 720p --duration 5 --no-audio --out ../out/shot.mp4
 uv run python gen_video.py --task-id <タスクID> --out ../out/shot.mp4   # 生成済みの結果だけ取り直す（無料）
 uv run python gen_video.py --prompt "画像1の店内で..." --image ../work/<作品>/assets/interior.jpg --ratio 9:16 --resolution 720p --duration 5 --no-audio --out ../out/shot.mp4   # 手元の画像を参考にする
-uv run python gen_image_openai.py --model gpt-image-2.6-sunburst --quality max --size 2160x3840 --prompt "..." --out ../out/image.png   # 縦長（横長は 3840x2160）
+uv run python gen_image_openai.py --model gpt-image-2.6-flare --quality high --size 1024x1536 --prompt "..." --out ../out/image.png   # 縦長（横長は 1536x1024。透明の背景は --background transparent）
 uv run python gen_image.py --prompt "..." --out ../out/image.png   # Seedream（予備）
 uv run python gen_music.py --prompt "明るいアコースティック、120BPM" --seconds 30 --out ../out/bgm.mp3
 uv run python gen_sfx.py --prompt "short airy whoosh for a fast camera whip pan" --seconds 0.6 --takes 2 --out ../out/whoosh.mp3
@@ -1681,6 +1679,7 @@ uv run python gen_sfx.py --prompt "short airy whoosh for a fast camera whip pan"
     `dola-seedream-5-5-261028`（画像）。映像の取得に失敗しても、`--task-id` で料金をかけずに取り直せる。
   - OpenAI: キー登録済み。**`gpt-image-2.5-flare` で実際の生成を確認済み**（1536×1024・約 19 秒・PNG 約 2.3MB）。
     **`gpt-image-2.6-sunburst`・品質 max でも、1440×2560 と 2160×3840 の生成を確認した**（2026-11-17。約 2 分・PNG 4.4〜9.5MB）。
+    **`gpt-image-2.6-flare`・品質 high・1024×1536 も確認した**（2026-11-17。透明の背景あり・なしとも 1 枚 9 秒）。
     このアカウントでは `gpt-image-2.5-sunburst`・`gpt-image-2.6-flare`・`gpt-image-2.6-sunburst` も使える
     （`GET https://api.openai.com/v1/models` で確認）。OpenAI のキーは `sk-` で始まる。`key_` で始まるのは
     キーの管理番号（ID）で、キーの代わりにはならない。
