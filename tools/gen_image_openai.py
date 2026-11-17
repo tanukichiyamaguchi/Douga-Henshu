@@ -1,14 +1,22 @@
 """OpenAI の画像生成（GPT Image）で、文章から画像を作って保存する。
 
 使い方（tools/ ディレクトリで実行）:
-  uv run python gen_image_openai.py --prompt "朝日に照らされた木造のカフェの外観、写真風" \
-      --size 1536x1024 --out ../out/cafe.png
-  uv run python gen_image_openai.py --prompt "..." --model gpt-image-2.5-sunburst --quality high --out ../out/a.png
+  uv run python gen_image_openai.py --prompt "朝日に照らされた木造のカフェの外観、写真風" --out ../out/cafe.png
+      # 既定（2026-11-17 から）: gpt-image-2.6-sunburst・品質 max・縦長 2160x3840
+  uv run python gen_image_openai.py --prompt "..." --size 3840x2160 --out ../out/wide.png   # 横長
+  uv run python gen_image_openai.py --prompt "..." --model gpt-image-2.5-flare --quality high --size 1024x1536 --out ../out/a.png   # 速く・安く試す時
 
 モデル（2026-11-14 時点、公式 SDK openai 3.51.0 の定義で確認）:
-  - gpt-image-2.5-flare    … 既定。速くて高品質（OpenAI が多くの用途の標準として推奨）
+  - gpt-image-2.5-flare    … 速くて高品質（OpenAI が多くの用途の標準として推奨）。2026-11-16 までの既定
   - gpt-image-2.5-sunburst … 時間はかかるが、細かい編集・仕上げ向き
   - gpt-image-2.6-flare / gpt-image-2.6-sunburst … 2026-11-04 公開の新版
+
+既定の設定（2026-11-17 ユーザーの指示「今後は、2.6sunburstでMAXの品質で出して欲しい。今後は最高峰のレベルで出して。」）:
+  - モデル gpt-image-2.6-sunburst・品質 max・大きさ 2160x3840（縦長）。大きさも、いちばん上にするのは Claude の解釈。
+  - 品質は low / medium / high / xhigh / max / auto。SDK（openai 3.51.0）の説明では xhigh・max は 2.5 の flare と sunburst だけだが、
+    2.6 sunburst でも max は通り、high の 4 倍のトークンを使った（2026-11-17 に 1440x2560 で実測: max 7,370・high 1,843）。
+  - 大きさは「横x縦」。縦横とも 16 の倍数・縦横比 1:3〜3:1・最大 3840x2160。2560x1440 を超える大きさは、SDK の説明で「試験的」。
+    2160x3840 は 1 枚約 2 分・PNG 約 9.5MB・出力 13,342 トークン（2026-11-17 の 1 回の実測）。
 
 前提:
   - API キーはクラウド環境の「ネットワークシークレット」として保存されており、
@@ -28,7 +36,9 @@ from pathlib import Path
 from openai import OpenAI
 
 DUMMY_KEY = "injected-by-proxy"
-DEFAULT_MODEL = "gpt-image-2.5-flare"
+DEFAULT_MODEL = "gpt-image-2.6-sunburst"
+DEFAULT_QUALITY = "max"
+DEFAULT_SIZE = "2160x3840"
 
 
 def main() -> None:
@@ -36,8 +46,8 @@ def main() -> None:
     parser.add_argument("--prompt", required=True, help="作りたい画像の説明")
     parser.add_argument("--out", type=Path, required=True, help="保存先（.png / .jpg / .webp）")
     parser.add_argument("--model", default=os.environ.get("OPENAI_IMAGE_MODEL", DEFAULT_MODEL), help=f"モデル（既定: {DEFAULT_MODEL}）")
-    parser.add_argument("--size", default="auto", help="大きさ（例: 1536x1024 横長 / 1024x1536 縦長 / 1024x1024 正方形 / auto）")
-    parser.add_argument("--quality", help="品質（例: low / medium / high / auto）")
+    parser.add_argument("--size", default=DEFAULT_SIZE, help=f"大きさ（既定: {DEFAULT_SIZE} 縦長。横長は 3840x2160。縦横とも 16 の倍数・最大 3840x2160・auto も可）")
+    parser.add_argument("--quality", default=DEFAULT_QUALITY, help=f"品質（既定: {DEFAULT_QUALITY}。low / medium / high / xhigh / max / auto）")
     parser.add_argument("--background", choices=["transparent", "opaque", "auto"], help="背景（transparent で透過 PNG）")
     parser.add_argument("--n", type=int, default=1, help="枚数（既定: 1）")
     args = parser.parse_args()
