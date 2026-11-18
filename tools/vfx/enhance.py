@@ -69,7 +69,7 @@ NOTES: dict[int, dict[str, str]] = {
     27: {
         "status": "○",
         "how": "ffmpeg の minterpolate（mi_mode=mci・mc_mode=aobmc・me_mode=bidir・vsbmc=1）。最後のコマを tpad で 2 コマ分のばして"
-        "から補間し、コマ数で切る（CLAUDE.md のスローモーションの作り方。末尾のコマ欠けを防ぐ）。--slow は setpts で長さを"
+        "から補間し、コマ数で切る（docs/notes/production-log.md のスローモーションの作り方。末尾のコマ欠けを防ぐ）。--slow は setpts で長さを"
         "のばしてから補間する（音声は付けない）。つなぎ目の扱い: 前後のコマの差（幅 96px の灰色）が 10 より大きく、まわり ±12 "
         "コマの中央値の 5 倍より大きい所（カット・白いフラッシュ・急な変化）で区切り、区切りごとに補間して -c copy でつなぐ"
         "（区切りでは中間のコマを作らず、前のコマをのばす）。minterpolate 自身の場面転換の判定（scd）も既定の 10 から 5 に"
@@ -972,7 +972,7 @@ def _interp_part(
     chain = [f"trim=end_frame={e - s}"]
     if size != (info.width, info.height):
         chain.append(f"scale={size[0]}:{size[1]}:flags=area")
-    # 最後のコマの先にも補間の相手が要るので、最後のコマを 2 コマ分のばしてから補間し、コマ数で切る（CLAUDE.md）
+    # 最後のコマの先にも補間の相手が要るので、最後のコマを 2 コマ分のばしてから補間し、コマ数で切る（docs/notes/production-log.md）
     chain.append(f"tpad=stop_mode=clone:stop_duration={2 / f:.6f}")
     if a.slow != 1:
         chain.append(f"setpts={a.slow:.6g}*PTS")

@@ -3,7 +3,8 @@
     "NODE_USE_ENV_PROXY": "1",
     "HYPERFRAMES_NO_TELEMETRY": "1",
     "HYPERFRAMES_NO_UPDATE_CHECK": "1",
-    "TQDM_DISABLE": "1"
+    "TQDM_DISABLE": "1",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "300000"
   },
   "enabledMcpjsonServers": ["chrome-devtools"]
 }

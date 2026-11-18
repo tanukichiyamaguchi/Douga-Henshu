@@ -87,7 +87,7 @@ uv run python -m vfx 56 入力.mp4            # 番号でも実行できる
 - 作品の中で映像に色調・粒子・ぼかし・周辺減光をかけるだけなら、HyperFrames の決まり（CSS の filter を使わず
   `npx hyperframes media-treatment`）に従う。vfx を使うのは、それでは足りない処理（手ぶれ補正・ノイズ除去・切り抜き・
   物を消す・超解像・補間など）。
-- 人物の切り抜きは、これまで `npx hyperframes remove-background` を使ってきた（CLAUDE.md）。vfx の `matte`（56）は
+- 人物の切り抜きは、これまで `npx hyperframes remove-background` を使ってきた（docs/notes/production-log.md）。vfx の `matte`（56）は
   髪の毛先まで残す別の方法。2 つを同じ素材で比べたことはない。
 - `track`（2）は HyperFrames 用の `.js` も書く。作品の `assets/` に置いて `<script src>` で読み、
   `window.vfxFollow(tl, 要素, window.__vfxTracks["名前"], {start, mediaStart, anchor, dx, dy})` に、映像の `data-start`・
@@ -115,7 +115,7 @@ uv run python -m vfx 56 入力.mp4            # 番号でも実行できる
 - 使うモデルは、商用で使えるライセンス（Apache-2.0・MIT・BSD など）の物だけ。モデル名とライセンスは各項目の「中身」に
   ある。学習に使われたデータの利用条件は、各配布元による（torchvision も、学習データの条件は使う人が確かめるよう
   注意書きしている）。
-- 実在の人物の顔を加工しない。広告に使う実在のスタッフの写真は、CLAUDE.md の「広告動画の場合」のとおり、本人の了承を
+- 実在の人物の顔を加工しない。広告に使う実在のスタッフの写真は、CLAUDE.md の「広告の決まり」のとおり、本人の了承を
   ユーザーに確かめ、加工せずそのまま使う。人を見分ける処理（`reid`・`multi-track` など）を、実在の人を特定する目的で使わない。
   実在の人の名前は、リポジトリのファイル（中身とファイル名）にも、コミットの文・PR の本文にも書かない。
 - 描き足し・消去（`inpaint`・`outpaint`・`sky-replace` など）で作った部分は、実際の場所や物とは違う。広告では、店内の様子や
