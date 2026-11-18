@@ -62,4 +62,4 @@ bash setup/cloud-setup.sh
 - **Blender / FFmpeg**: GPL / LGPL。このリポジトリには本体を含めず、実行時に導入します。
 - このリポジトリは公開されています。秘密情報や、権利を持たない素材はコミットしないでください。
 
-詳しい技術的な注意点は [CLAUDE.md](CLAUDE.md) にまとめています。
+いま有効な決まりと、よく当たる落とし穴は [CLAUDE.md](CLAUDE.md) に、決まりの経緯・測った記録・作品ごとの記録は [docs/notes/](docs/notes/) にまとめています。
