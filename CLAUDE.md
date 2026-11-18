@@ -203,6 +203,8 @@ uv run python transcribe.py ../work/<作品>/assets/vo.mp3 --out-dir ../work/<�
 uv run python tighten_pauses.py <声> --max-pause 0.12 --out <出力>        # 文の間を詰める（速さは変えない）
 uv run python tempo_check.py <MP4> --lines <lines.json>                   # テンポの数字（報告用）
 uv run python voice_check.py --before <受け取った声> --after <加工した声>   # 声が加工で変わっていないか
+uv run python overlay_check.py <書き出した MP4> <文字なしの土台の MP4>      # 文字の範囲・安全域・顔や手との重なりを全コマで測る
+uv run python kana_align.py <音声> <読みのファイル> --out <JSON>           # かなごとの時刻（話す映像の口に声を合わせる時）
 uv run python fetch_fonts.py ../work/<作品> --font "<書体名>:<太さ>"      # 使う文字だけの書体を取る（文字を変えたら取り直す）
 uv run python gen_video.py --prompt "..." --ratio 9:16 --resolution 720p --duration 5 --no-audio --out <出力>
 uv run python gen_video.py --task-id <ID> --out <出力>                    # 生成済みの結果だけ取り直す（無料）
