@@ -259,7 +259,7 @@ uv run python -m vfx list                                                 # 映�
 | 医院・クリニックの広告 | `docs/notes/medical-ads.md`（作る前に必ず） |
 | テロップの細かい置き方・見た目 | `docs/notes/telop.md` |
 | 前の作品の続き・作り直し、不具合に当たった時 | `docs/notes/production-log.md`（grep で節を探して読む） |
-| 決まりの経緯、テンポの数字の目安・良いと言われた作品（参考。決まりではない） | `docs/notes/rules-history.md` |
+| 決まりの経緯、テンポの数字の目安（参考。決まりではない） | `docs/notes/rules-history.md` |
 | テンポや声を測る・比べる | `docs/notes/measurements.md`、`tools/tempo_check.py`・`tools/voice_check.py` |
 | 環境・道具・API・Drive・書体・Remotion の細部 | `docs/notes/environment-and-tools.md` |
 | 同じ依頼主の依頼 | `docs/clients/` |
