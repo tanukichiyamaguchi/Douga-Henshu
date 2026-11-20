@@ -148,6 +148,8 @@ uv run python gen_sfx.py --prompt "short airy whoosh for a fast camera whip pan"
   - OpenAI: キー登録済み。**`gpt-image-2.5-flare` で実際の生成を確認済み**（1536×1024・約 19 秒・PNG 約 2.3MB）。
     **`gpt-image-2.6-sunburst`・品質 max でも、1440×2560 と 2160×3840 の生成を確認した**（2026-11-17。約 2 分・PNG 4.4〜9.5MB）。
     **`gpt-image-2.6-flare`・品質 high・1024×1536 も確認した**（2026-11-17。透明の背景あり・なしとも 1 枚 9 秒）。
+    **`gpt-image-2.6-flare` は 2560×1440・1440×2560・1440×1440 も作れた**（2026-11-20。品質 high で 1 枚 11〜18 秒）。API の
+    `chatgpt-image-latest` は 1024×1024・1024×1536・1536×1024 だけで、ほかの大きさは 400 が返る（2026-11-20）。
     このアカウントでは `gpt-image-2.5-sunburst`・`gpt-image-2.6-flare`・`gpt-image-2.6-sunburst` も使える
     （`GET https://api.openai.com/v1/models` で確認）。OpenAI のキーは `sk-` で始まる。`key_` で始まるのは
     キーの管理番号（ID）で、キーの代わりにはならない。
@@ -191,6 +193,8 @@ claude.ai の Google Drive コネクタ（`mcp__Google_Drive__*`）を使う。A
 ### 完成品の受け渡し（2026-11-14 ユーザー決定）
 
 - 完成品は **このアプリに直接送る**（SendUserFile。大きさの制限なし）。
+  - 動画は `display: "attach"`（ダウンロード用のカード）で送る（2026-11-19。`render` や指定なしで送った約 22MB の MP4 を、
+    ユーザーが保存できなかった。同じファイルを `attach` で送り直すと保存できた。経過は `production-log.md`）。
 - **3.1MB 以下なら、Drive の `02_完成動画` にも保存する**（コネクタ。保存のたびに承認が必要）。
 - 3.1MB を超えるものの Drive 保存（下記 `drive.py`）は **ユーザーの判断で後日に見送り**。
   認証情報が未登録のまま使おうとしない。
