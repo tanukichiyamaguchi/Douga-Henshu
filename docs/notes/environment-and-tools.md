@@ -148,6 +148,8 @@ uv run python gen_sfx.py --prompt "short airy whoosh for a fast camera whip pan"
   - OpenAI: キー登録済み。**`gpt-image-2.5-flare` で実際の生成を確認済み**（1536×1024・約 19 秒・PNG 約 2.3MB）。
     **`gpt-image-2.6-sunburst`・品質 max でも、1440×2560 と 2160×3840 の生成を確認した**（2026-11-17。約 2 分・PNG 4.4〜9.5MB）。
     **`gpt-image-2.6-flare`・品質 high・1024×1536 も確認した**（2026-11-17。透明の背景あり・なしとも 1 枚 9 秒）。
+    **`gpt-image-2.6-flare` は 2560×1440・1440×2560・1440×1440 も作れた**（2026-11-20。品質 high で 1 枚 11〜18 秒）。API の
+    `chatgpt-image-latest` は 1024×1024・1024×1536・1536×1024 だけで、ほかの大きさは 400 が返る（2026-11-20）。
     このアカウントでは `gpt-image-2.5-sunburst`・`gpt-image-2.6-flare`・`gpt-image-2.6-sunburst` も使える
     （`GET https://api.openai.com/v1/models` で確認）。OpenAI のキーは `sk-` で始まる。`key_` で始まるのは
     キーの管理番号（ID）で、キーの代わりにはならない。
