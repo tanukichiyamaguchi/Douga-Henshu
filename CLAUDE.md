@@ -60,10 +60,10 @@
 | 形 | 縦型 9:16・1080×1920・15〜30 秒。長さは多少超えてよい（2026-11-16）。大きく超える時は、長さを書いて選んでもらう |
 | ナレーション | ElevenLabs（`narrate_elevenlabs.py`）、声 Harune・モデル eleven_v4、**加工しない**（話す速さを上げる加工も使わない。2026-11-16・18）。使えない時は Chatterbox（`narrate.py`） |
 | 字幕・画面の言葉 | 入れる。**1 画面 15 文字以内**（2026-11-17）。Claude が HTML/CSS で組む（2026-11-18。画像生成に文字を描かせるのは、頼まれた時だけ）。置き方と見た目は下の「テロップ」 |
-| BGM | ElevenLabs Music（`gen_music.py`）、歌なし、動画の長さに合わせる |
+| BGM | 先に OpenTracks（旧 DOVA-SYNDROME）のフリー BGM から選び（`free_audio.py`）、合う物が無い時だけ ElevenLabs Music（`gen_music.py`）で作る（2026-11-23「有名な、よく広告で使われるフリーのBGMや効果音…を使用してほしい」）。歌なし、動画の長さに合わせる |
 | 映像素材 | Seedance 2.5（`gen_video.py`）、9:16・720p・5 秒・`--no-audio` |
 | 画像素材 | GPT Image 2.6 flare・品質 high・1024×1536（横長は 1536×1024）（2026-11-17。スクリプトの既定値も同じ） |
-| 効果音 | ElevenLabs の効果音生成（`gen_sfx.py`）。音は接続済みの API で作り、計算で合成した音を代わりに使わない（2026-11-15） |
+| 効果音 | 先に効果音ラボのフリー効果音から選び（`free_audio.py`）、合う物が無い時だけ ElevenLabs の効果音生成（`gen_sfx.py`）で作る（2026-11-23）。計算で合成した音を代わりに使わない（2026-11-15）。18 歳以上に配信する広告では、扱いが決まるまで効果音ラボを使わない。規約の要点・選び方は `docs/notes/free-audio.md` |
 | 費用 | 生成 AI の合計 1 本 10 ドルまでは確認なしで使ってよい。超えそうなら、生成の前に見積もりを示して確認する |
 | お届け | アプリに直接送る（SendUserFile）。3.1MB 以下なら Drive の `02_完成動画` にも保存 |
 | ファイル名 | 送る・Drive に保存するファイルはすべて `日付_店名_内容_形_秒数_v版` にする（例 `20261123_〇〇店_まつ毛パーマ_9x16_21秒_v1.mp4`。見本・声の聞き比べ・バナーも）。直して送り直す時は版を上げる（2026-11-23「もっとどの動画なのかわかるような名前に」。形と範囲はユーザーが選んだ）。日付は日本時間。細部は `docs/notes/file-naming.md` |
@@ -90,7 +90,8 @@
 7. **確かめ**: `npm run check` を合格させる。書き出した MP4 を `ffprobe`・`transcribe.py` で確かめ、場面の切り替わり・文字と顔の
    重なり・安全域・1 画面の文字数を、縮めたコマの一覧とスクリプトの数字で確かめる。`tempo_check.py` の数字は報告に書く。
 8. **お届けと報告**: 完成品を送り、「使った素材と費用の見積もり」「確かめたこと」「確かめられなかったこと（声の自然さは耳で
-   確かめていない など）」「使った声と、声にかけた加工」を短く書く。
+   確かめていない など）」「使った声と、声にかけた加工」「BGM・効果音の出どころ（`free_audio.py sources` の表。ElevenLabs で
+   作った物はそう書く。2026-11-23）」を短く書く。
 
 ## 作品の決まり（ユーザーが決めたこと）
 
@@ -210,7 +211,8 @@
 
 - GPU なし・CPU 4 コア・メモリ 15GB。
 - 外部通信はプロキシ経由で、許可された通信先だけ（npm・PyPI・GitHub・Ubuntu apt・Hugging Face・PyTorch・Google Fonts・
-  `cdn.jsdelivr.net`・`remotion.media`・生成 AI の API）。YouTube などは遮断される。許可の外のサイトを読む必要がある時は、
+  `cdn.jsdelivr.net`・`remotion.media`・生成 AI の API・フリー音源の `soundeffect-lab.info`・`opentracks.com`・
+  `dova-worker.tracks-cid.workers.dev`〔2026-11-23 に承認〕）。YouTube などは遮断される。許可の外のサイトを読む必要がある時は、
   その通信先 1 つだけを環境の設定に足す提案をし、承認を受けてから読む。
 - Node.js から外部通信する時は `NODE_USE_ENV_PROXY=1` が要る（`.claude/settings.json` で設定済み）。
 - 証明書の検証は、絶対に無効化しない（`--ignore-certificate-errors` などを使わない）。
@@ -235,6 +237,9 @@ uv run python gen_video.py --task-id <ID> --out <出力>                    # �
 uv run python gen_image_openai.py --prompt "..." --out <出力>              # 既定: 2.6 flare・high・1024x1536
 uv run python gen_music.py --prompt "..." --seconds 30 --out <出力>
 uv run python gen_sfx.py --prompt "..." --seconds 0.6 --takes 2 --out <出力>
+uv run python free_audio.py se キラキラ 決定                               # 効果音ラボで探す（取るのは se-get）
+uv run python free_audio.py bgm --tag 明るい --tag ポップ --detail         # OpenTracks で探す（取るのは bgm-get）
+uv run python free_audio.py sources ../work/<作品>/assets                 # 音の出どころの表（報告用）
 uv run python -m vfx list                                                 # 映像処理テクニックの一覧
 ```
 
@@ -293,3 +298,4 @@ uv run python -m vfx list                                                 # 映�
 | 映像処理（手ぶれ補正・切り抜き・カット検出など） | スキル `video-techniques` |
 | 最後の CTA の言葉（見るだけ型の言い換え・医院の言い方）と、LP の確かめ方 | `docs/notes/cta-lp.md` |
 | 送るファイルの名前の細部（見本・バナーの名前、日付の取り方） | `docs/notes/file-naming.md` |
+| BGM・効果音を選ぶ（フリー音源の道具の使い方・選び方・2 つのサイトの規約の要点） | `docs/notes/free-audio.md` |
