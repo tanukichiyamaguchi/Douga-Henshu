@@ -13,7 +13,9 @@
 - **外部通信はプロキシ経由で、許可された通信先のみ**。許可済み: npm / PyPI / GitHub /
   Ubuntu apt、`huggingface.co`・`us.aws.cdn.hf.co`・`cas-server.xethub.hf.co`（AIモデル）、
   `download.pytorch.org`・`download-r2.pytorch.org`（CPU 版 PyTorch）、`remotion.media`
-  （Remotion 同梱ブラウザ）、`cdn.jsdelivr.net`（GSAP）、Google Fonts。
+  （Remotion 同梱ブラウザ）、`cdn.jsdelivr.net`（GSAP）、Google Fonts、
+  `soundeffect-lab.info`・`opentracks.com`・`dova-worker.tracks-cid.workers.dev`（フリーの効果音と BGM。2026-11-23 に
+  ユーザーの承認を受けて足した。使い方は `docs/notes/free-audio.md`）。
   これ以外（YouTube など）は遮断される。
 - **Node.js から外部通信する時は `NODE_USE_ENV_PROXY=1` が必要**（`.claude/settings.json`
   で設定済み。npm スクリプトにも付けてある）。無いと `ENOTFOUND` で失敗する。
