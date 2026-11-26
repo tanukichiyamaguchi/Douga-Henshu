@@ -27,6 +27,13 @@
   - 音楽 API は有料プランが必要（公式ドキュメントの記載）。使える範囲（SNS・広告など）は
     契約プランの規約で確認する。
   - 既定は歌なし（インスト）。--vocals で歌ありにできる。
+
+実測の注意:
+  - --seed は --prompt と一緒には使えない（API が 422「`seed` cannot be used with `prompt`」で断る。2026-11-15・19）。
+    通信の前に断るようにしてある。候補が複数ほしい時は、--seed なしで複数回作る。
+  - 同時に送れるのは 2 本まで（2026-11-19 の契約での実測。3 本目は concurrent_limit_exceeded で断られた）。
+  - 短い長さ（19 秒）で作ると、出だしが遅い・途中で小さくなる曲が出た（2026-11-19）。30 秒で作り、小節で切り出す方が安定した。
+  - 生成に失敗した時は、空や途中までのファイルを残さない（残ると、できた物と見分けにくい）。
 """
 
 from __future__ import annotations
@@ -49,11 +56,13 @@ def main() -> None:
     parser.add_argument("--plan", type=Path, help="区間ごとの構成を書いた JSON（使い方は先頭の説明を参照）")
     parser.add_argument("--seconds", type=float, default=30.0, help="曲の長さ（秒、既定: 30。--plan の時は区間の合計）")
     parser.add_argument("--vocals", action="store_true", help="歌ありにする（既定は歌なし。--plan の時は lines で決まる）")
-    parser.add_argument("--seed", type=int, help="乱数の種")
+    parser.add_argument("--seed", type=int, help="乱数の種（--prompt とは一緒に使えない。--plan との組み合わせは未確認）")
     parser.add_argument("--out", type=Path, required=True, help="保存先（.mp3）")
     args = parser.parse_args()
     if not args.prompt and not args.plan:
         parser.error("--prompt か --plan を指定してください。")
+    if args.seed is not None and not args.plan:
+        parser.error("--seed は --prompt と一緒には使えません（API が 422 で断ります）。--seed を外してください。")
 
     client = ElevenLabs(api_key=os.environ.get("ELEVENLABS_API_KEY", DUMMY_KEY), base_url=BASE_URL)
     options = {"seed": args.seed} if args.seed is not None else {}
@@ -72,10 +81,18 @@ def main() -> None:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     size = 0
-    with args.out.open("wb") as f:
-        for chunk in audio:
-            f.write(chunk)
-            size += len(chunk)
+    try:
+        with args.out.open("wb") as f:
+            # 通信は、ここで最初のかたまりを読む時に始まる（API のエラーも、ここで出る）
+            for chunk in audio:
+                f.write(chunk)
+                size += len(chunk)
+    except BaseException:
+        args.out.unlink(missing_ok=True)
+        raise
+    if size == 0:
+        args.out.unlink(missing_ok=True)
+        raise SystemExit(f"生成に失敗しました: 音のデータが 0 バイトでした（{args.out} は残していません）")
     print(f"保存しました: {args.out}（{size / 1024:.0f} KB）")
 
 
