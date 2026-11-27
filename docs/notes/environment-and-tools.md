@@ -157,6 +157,9 @@ uv run python gen_sfx.py --prompt "short airy whoosh for a fast camera whip pan"
     日本語対応モデルは `eleven_v4`・`eleven_v4_turbo`・`eleven_v3`・`eleven_multilingual_v2` など（`--list-models`）。
     声は共有ボイスの Harune（`c2XJrw7TvNGtOc6r0ijG`）をユーザーが試聴して選んだ。約 50 文字で約 8 秒、
     文字起こしで台本どおりと確認。BGM は 10 秒が約 5 秒で生成（MP3・ステレオ・44.1kHz）。
+    eleven_v4 は、声の設定の speed が効かない（長さが変わらない）。速めに読ませる時は、文の頭に `[quickly]` と書く（声の長さ
+    −10〜15%。`[fast-paced]` −10〜12%・`[rushed]` −6〜23%・`[excited]` はほぼ変わらない。タグの言葉は読まれない。2026-11-20 に
+    3 文で測った）。`[quickly]` の声は、返ってくる字の時刻がずれる（`production-log.md` の 2026-11-20 の節）。
     日本語の共有ボイスの探し方: `GET https://api.elevenlabs.io/v1/shared-voices?language=ja`。
     効果音（`gen_sfx.py`）も生成を確認済み（0.5〜0.6 秒・MP3。音量は −14〜−17 LUFS と大きく、ピークが 0 dB を
     超えるものもあるので、動画では `data-volume` 0.3〜0.4 程度に下げる）。
