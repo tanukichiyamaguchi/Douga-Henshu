@@ -51,6 +51,8 @@ uv run python transcribe.py ../out/narration.wav --out-dir ../out
 uv run python tighten_pauses.py ../out/narration.mp3 --max-pause 0.12 --out ../out/narration-tight.wav   # 文の間を 0.12 秒に詰める（話す速さを上げる時は --tempo 1.25 を足す。「毎回守ること」のテンポの行）
 uv run python tempo_check.py ../work/<作品>/out.mp4 --lines ../work/<作品>/lines.json   # テンポを測る（絵の動き・カットの長さ・話す速さと文の間。目安と比べて ○× を出す）
 uv run python voice_check.py --before 受け取った声.mp3 --after 加工した声.wav             # 声が加工で変わっていないか（高い音・大きさの幅）。候補の声を比べる時は、ファイルを並べる
+uv run python overlay_check.py ../work/<作品>/renders/out.mp4 ../work/<作品>/assets/base.mp4 --scenes 0,211,277   # 書き出しと、文字なしの土台を全コマ比べる（足した物の範囲・安全域の外・顔や手との重なり。白い縁取りと、出てくる時の行き過ぎも入る）
+uv run python kana_align.py 声.wav 読み.txt --out al.json                                  # 決まった読み（ひらがな・1 行に 1 句）を音声に時刻合わせする（初めての時にモデル約 1.2GB を取る）
 uv run python blender_render.py --text "動画編集" --out ../out/blender.mp4
 uv run python fetch_fonts.py ../work/<作品> --font "<書体名>:<太さ>" --font "<書体名>:<太さ>"   # 使う文字だけの書体を assets/fonts/ へ（書体は作品ごとに選ぶ。上の「トンマナの決め方」）
 uv run python -m vfx list                      # 映像処理テクニック 100 選の一覧と状態（74 項目が使える）
